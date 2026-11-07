@@ -13,10 +13,13 @@ Interpreters come from environment variables, falling back to
 """
 from __future__ import annotations
 
+import hashlib
 import json
+import math
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -61,7 +64,16 @@ def local_zmx(path_text: str | os.PathLike) -> Path:
     return path
 
 
+def skills_root() -> Path:
+    """The skills folder; the core runs from a repository checkout or an editable install."""
+    if not SKILLS.is_dir():
+        raise EngineError(f"skills folder not found at {SKILLS}; install from a repository checkout "
+                          "(pip install -e) or set OPTICS_SKILLS_ROOT")
+    return SKILLS
+
+
 def run_script(engine: str, script: Path, *args: str | os.PathLike) -> subprocess.CompletedProcess[str]:
+    skills_root()
     command = [str(interpreter(engine)), "-I", str(script), *map(str, args)]
     env = dict(os.environ, PYTHONUTF8="1")
     return subprocess.run(command, capture_output=True, text=True, encoding="utf-8",
@@ -112,6 +124,46 @@ def probe(engine: str, zmx: Path, output: Path, overrides: dict | None = None,
     return _report(result, output, {0})
 
 
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _json_safe(value: Any) -> Any:
+    """Strict JSON: non-finite floats become the strings the probes use."""
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, float) and not math.isfinite(value):
+        return "NaN" if math.isnan(value) else ("Infinity" if value > 0 else "-Infinity")
+    return value
+
+
+def _refuse_aliases(outputs: list[Path], inputs: list[Path]) -> None:
+    """Refuse output paths that are links to, or hard links of, an input file."""
+    for output in outputs:
+        if output.is_symlink():
+            raise ValueError(f"refusing to write through a link: {output}")
+        if not output.exists():
+            continue
+        for source in inputs:
+            if source.exists() and os.path.samefile(output, source):
+                raise ValueError(f"output {output} is the same file as input {source}")
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    """Write to a temporary file, then replace: never write into an existing file."""
+    fd, temp = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+            json.dump(_json_safe(payload), handle, indent=2, ensure_ascii=False, allow_nan=False)
+            handle.write("\n")
+        os.replace(temp, path)
+    except BaseException:
+        Path(temp).unlink(missing_ok=True)
+        raise
+
+
 def _reference_efl(path: str | None) -> float | None:
     if not path:
         return None
@@ -131,6 +183,11 @@ def diagnose(zmx: str | os.PathLike, output_dir: Path, reference_json: str | Non
     if output_dir.exists() and any(output_dir.iterdir()) and not force:
         raise FileExistsError(f"refusing to write into non-empty directory: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
+    inputs = [source] + ([Path(reference_json).expanduser()] if reference_json else [])
+    planned = [final, output_dir / "probe-optiland.json", output_dir / "probe-rayoptics.json"]
+    planned += [output_dir / f"probe-optiland-{name.replace('_', '-')}.json" for name in diagnosis.EXPERIMENTS]
+    _refuse_aliases(planned, inputs)
+    source_sha256 = _sha256(source)
     reference_efl = _reference_efl(reference_json)
 
     optiland = probe("design", source, output_dir / "probe-optiland.json", force=force)
@@ -168,37 +225,46 @@ def diagnose(zmx: str | os.PathLike, output_dir: Path, reference_json: str | Non
     def open_differences() -> bool:
         return bool(state["first_order"] or state["rays"])
 
-    overrides = diagnosis.catalog_overrides(optiland, rayoptics, baseline["inputs"])
-    if not overrides:
-        skip("material_catalog_swap", "no glass catalog difference")
-    elif not open_differences():
-        skip("material_catalog_swap", "no first-order or ray difference to explain")
+    def run_experiments() -> None:
+        overrides = diagnosis.catalog_overrides(optiland, rayoptics, baseline["inputs"])
+        if not overrides:
+            skip("material_catalog_swap", "no glass catalog difference")
+        elif not open_differences():
+            skip("material_catalog_swap", "no first-order or ray difference to explain")
+        else:
+            run("material_catalog_swap", "Optiland matches RayOptics when it uses RayOptics' glass catalogs",
+                overrides=overrides)
+        effect = diagnosis.object_distance_effect(baseline["inputs"], rayoptics["first_order"]["fno_working"])
+        if effect is None:
+            skip("object_distance", "both engines model the object distance the same way")
+        elif not diagnosis.object_distance_matters(effect):
+            skip("object_distance", f"estimated effect below tolerance: edge ray {effect['edge_ray_mm']:.3g} mm, "
+                                    f"working f/# {effect['relative_working_fno']:.3g} relative")
+        elif not open_differences():
+            skip("object_distance", "no first-order or ray difference left to explain")
+        else:
+            run("object_distance", "Optiland matches RayOptics when the object sits at RayOptics' finite "
+                "distance instead of infinity", object_distance=effect["finite_distance_mm"])
+        if not state["rays"]:
+            skip("ray_aiming", "no real-ray difference left to explain")
+        else:
+            run("ray_aiming", "off-axis rays agree when Optiland aims rays at the real stop",
+                ray_aiming="iterative")
+
+    not_comparable = diagnosis.blocking(baseline["inputs"])
+    if not_comparable:
+        for name in diagnosis.EXPERIMENTS:
+            skip(name, "inputs not comparable: " + "; ".join(f["detail"] for f in not_comparable))
     else:
-        run("material_catalog_swap", "Optiland matches RayOptics when it uses RayOptics' glass catalogs",
-            overrides=overrides)
-    effect = diagnosis.object_distance_effect(baseline["inputs"], rayoptics["first_order"]["fno_working"])
-    if effect is None:
-        skip("object_distance", "both engines model the object distance the same way")
-    elif not diagnosis.object_distance_matters(effect):
-        skip("object_distance", f"estimated effect below tolerance: edge ray {effect['edge_ray_mm']:.3g} mm, "
-                                f"working f/# {effect['relative_working_fno']:.3g} relative")
-    elif not open_differences():
-        skip("object_distance", "no first-order or ray difference left to explain")
-    else:
-        run("object_distance", "Optiland matches RayOptics when the object sits at RayOptics' finite "
-            "distance instead of infinity", object_distance=effect["finite_distance_mm"])
-    if not state["rays"]:
-        skip("ray_aiming", "no real-ray difference left to explain")
-    else:
-        run("ray_aiming", "off-axis rays agree when Optiland aims rays at the real stop",
-            ray_aiming="iterative")
+        run_experiments()
 
     conclusion = diagnosis.conclude(baseline, experiments)
     report = {
         "schema": "optics-diagnosis/1",
         "status": conclusion["status"],
         "source": optiland["source"],
-        "engines": {p["engine"]: {"version": p["engine_version"], "settings": p["settings"]}
+        "engines": {p["engine"]: {"version": p["engine_version"], "settings": p["settings"],
+                                  "integrity": p.get("integrity")}
                     for p in (optiland, rayoptics)},
         "tolerances": {"geometry_atol_mm": diagnosis.GEOMETRY_ATOL_MM, "index_atol": diagnosis.INDEX_ATOL,
                        "first_order_rtol": diagnosis.FIRST_ORDER_RTOL, "ray_atol_mm": diagnosis.RAY_ATOL_MM},
@@ -212,7 +278,8 @@ def diagnose(zmx: str | os.PathLike, output_dir: Path, reference_json: str | Non
         "limitations": [
             "Optiland is the adjusted engine in every experiment; RayOptics is held fixed.",
             "An experiment that removes a difference keeps its setting for the next one; one that "
-            "removes nothing is reverted. Rays an experiment cannot trace keep their earlier state.",
+            "removes nothing is reverted. A ray an experiment cannot trace is never credited to it; a ray "
+            "that agreed before and cannot be traced under a kept setting stays unresolved.",
             "Rays are compared at the primary wavelength: the chief ray and three pupil-edge rays per field.",
             "Aberration coefficients, spot and MTF are not compared: the engines use different "
             "normalizations, and RayOptics has no MTF.",
@@ -220,5 +287,7 @@ def diagnose(zmx: str | os.PathLike, output_dir: Path, reference_json: str | Non
             "engine matches the manufacturer or OpticStudio unless a reference is supplied.",
         ],
     }
-    final.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    _write_json(final, report)
+    if _sha256(source) != source_sha256:
+        raise EngineError(f"input changed during the diagnosis: {source}")
     return report

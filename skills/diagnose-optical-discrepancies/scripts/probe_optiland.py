@@ -102,6 +102,9 @@ def main() -> int:
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
     source = entry._local_input(args.input_zmx)
+    manifest = entry._package_code_manifest()
+    if not manifest["matches_pin"]:
+        raise entry.RegressionError("installed Optiland source does not match the pinned code manifest")
     before = entry._sha256(source)
     report = probe(source, json.loads(args.material_overrides),
                    None if args.ray_aiming in (None, "paraxial") else args.ray_aiming,
@@ -110,7 +113,10 @@ def main() -> int:
     if before != after:
         raise entry.RegressionError("input ZMX changed during read-only probe")
     report = {"schema": "optics-probe/1",
-              "source": {"path": str(source), "sha256_before": before, "sha256_after": after}, **report}
+              "source": {"path": str(source), "sha256_before": before, "sha256_after": after},
+              "integrity": {"optiland_code_manifest": {key: manifest[key] for key in
+                                                       ("sha256", "file_count", "matches_pin")}},
+              **report}
     entry._atomic_json(Path(args.output), report, args.force, {source})
     print(json.dumps({"status": "OK", "engine": "optiland", "output": str(Path(args.output).resolve())}))
     return 0

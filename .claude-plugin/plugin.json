@@ -1,6 +1,6 @@
 {
   "name": "optics-agent-skills",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Optical design agent skills: pinned Optiland and RayOptics analysis of Zemax .zmx prescriptions, cross-engine discrepancy diagnosis, Chromatix/Prysm wave optics and an MCP server.",
   "author": { "name": "laweit-lxy", "url": "https://github.com/laweit-lxy" },
   "homepage": "https://github.com/laweit-lxy/optics-agent-skills",

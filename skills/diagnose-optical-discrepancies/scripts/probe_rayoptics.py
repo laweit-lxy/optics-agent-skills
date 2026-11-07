@@ -95,8 +95,14 @@ def main() -> int:
     after = entry._sha256(source)
     if before != after:
         raise entry.CrossCheckError("input ZMX changed during read-only probe")
+    manifest = entry._package_manifest()
     report = {"schema": "optics-probe/1",
-              "source": {"path": str(source), "sha256_before": before, "sha256_after": after}, **report}
+              "source": {"path": str(source), "sha256_before": before, "sha256_after": after},
+              "integrity": {"rayoptics_source_manifest": {key: manifest[key] for key in
+                                                          ("sha256", "file_count", "manifest_matches_frozen",
+                                                           "commit_matches_pin", "matches_pin")},
+                            "rii_catalog_snapshot": entry._rii_snapshot()["matches_pin"]},
+              **report}
     entry._atomic_json(output, report, args.force, {source})
     print(json.dumps({"status": "OK", "engine": "rayoptics", "output": str(output.resolve())}))
     return 0

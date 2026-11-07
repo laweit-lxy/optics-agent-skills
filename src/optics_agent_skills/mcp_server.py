@@ -44,6 +44,8 @@ def _summary(report: dict[str, Any], keys: tuple[str, ...]) -> dict[str, Any]:
 def list_samples() -> list[dict[str, str]]:
     """List the bundled regression prescriptions and their OpticStudio references."""
     data = engines.REPO / "tests" / "data"
+    if not data.is_dir():
+        raise ToolError(f"bundled samples not found at {data}; install from a repository checkout (pip install -e)")
     return [{"name": folder.name,
              "zmx": str(next(folder.glob("*.zmx"))),
              "opticstudio_reference": str(next(folder.glob("*-native-reference.json")))}

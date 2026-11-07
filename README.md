@@ -55,6 +55,8 @@ The shared core in `src/optics_agent_skills` is standard library only. The same 
 python3.12 -m venv .venv-mcp && .venv-mcp/bin/pip install -e ".[mcp]"
 ```
 
+Install from a clone with `pip install -e`. The core runs the scripts under `skills/` and lists the samples in `tests/data`; a regular (non-editable) wheel does not contain them, so the server reports an error instead of running.
+
 ```json
 {
   "mcpServers": {

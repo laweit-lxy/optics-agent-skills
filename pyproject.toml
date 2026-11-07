@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "optics-agent-skills"
-version = "0.2.0"
+version = "0.2.1"
 description = "Shared core for optics-agent-skills: engine orchestration, cross-engine discrepancy diagnosis and an MCP server."
 readme = "README.md"
 license = "MIT"

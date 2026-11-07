@@ -9,9 +9,9 @@ Use this skill when two engines give different numbers for one `.zmx` file and t
 
 ## Safety contract
 
-- Accept only an absolute local `.zmx` path. Every probe hashes the source before and after and fails if it changed. Never save or edit the prescription.
-- Write into a new or empty output directory. Refuse a non-empty one unless the user explicitly authorizes `--force`.
-- Run each engine only in its own pinned environment. Do not install, upgrade or patch engine packages to make a probe pass.
+- Accept only an absolute local `.zmx` path. Every probe hashes the source before and after and fails if it changed, and the diagnosis checks the hash again after writing its report. Never save or edit the prescription.
+- Write into a new or empty output directory. Refuse a non-empty one unless the user explicitly authorizes `--force`. Even with `--force`, an output file that is a link or hard link of the prescription or the reference is refused.
+- Run each engine only in its own pinned environment. Both probes refuse an engine that fails its pinned source check and record the check under `engines.<engine>.integrity`. Do not install, upgrade or patch engine packages to make a probe pass.
 - Report a cause as confirmed only when an experiment removed the difference. Report everything else as an unconfirmed input finding or as unresolved.
 
 ## Setup
@@ -31,12 +31,12 @@ The output directory holds `diagnosis.json` and one `probe-*.json` per engine ru
 ## How it works
 
 1. Probe both engines (schema `optics-probe/1`). Each probe records the surfaces it built (radius, thickness, material name and catalog, index at every wavelength), the stop, the wavelengths, the fields, the EFL, the working F-number from the paraxial marginal ray, and the image intercepts of the chief ray and three pupil-edge rays per field at the primary wavelength.
-2. Compare the inputs, then the first-order values, then the rays. The tolerances are in `diagnosis.json` under `tolerances`.
+2. Check that both reports are complete, then compare the inputs, the first-order values and the rays. The tolerances are in `diagnosis.json` under `tolerances`. If the engines built a different number of surfaces, different wavelengths or primary wavelength, or different fields, the outputs do not describe the same rays: no experiment runs and the status is `UNRESOLVED` with a `not_comparable` item.
 3. Run experiments on Optiland only, holding RayOptics fixed. Each runs only while the difference it targets remains. A setting that removes a difference is kept for the next experiment; one that removes nothing is reverted:
    - `material_catalog_swap`: give Optiland the glass catalogs RayOptics resolved.
    - `object_distance`: place the object at RayOptics' finite distance. RayOptics stores an infinite object as 1e10 mm, which shifts the image by about f²/z. Skipped when the estimated edge-ray shift and working-F-number change are below tolerance.
    - `ray_aiming`: switch Optiland to iterative aiming at the real stop.
-4. Credit each difference to the first experiment after which it disappears. A ray an experiment cannot trace (Optiland returns NaN for wide angle fields from a 1e10 mm object) keeps its earlier state and is listed under `untraced_rays`. Whatever remains after the last experiment is unresolved.
+4. Credit each difference to the first experiment after which it disappears. A ray an experiment cannot trace is listed under `untraced_rays` and never credited (at a 1e10 mm object, Optiland returns NaN for some Cooke fields and for every Double-Gauss field, the axis included). A ray that had a difference keeps it; a ray that agreed before becomes an `untraced_ray` item if the experiment is kept. A ray missing from one report counts as untraced. Whatever remains after the last experiment is unresolved.
 
 ## Report fields (`optics-diagnosis/1`)
 
@@ -47,7 +47,7 @@ The output directory holds `diagnosis.json` and one `probe-*.json` per engine ru
 | `experiments` | Each experiment with its hypothesis, cumulative settings, status (`RAN` or `SKIPPED` with a reason) and the comparison after it. |
 | `causes` | Confirmed causes only: the category, `confirmed_by` (the experiment) and `explains` (the differences it removed). |
 | `input_differences_without_confirmed_effect` | Input differences (importer, catalog, object distance) that no experiment tied to an output difference. |
-| `unresolved` | Differences no experiment removed, with the remaining candidates. |
+| `unresolved` | Items that block `EXPLAINED`: `first_order` and `real_ray` differences no experiment removed, `untraced_ray` (no valid intercept in one engine under the final settings) and `not_comparable` (different surfaces, wavelengths or fields). |
 | `reference` | Per-engine EFL against the supplied reference, or null. |
 | `limitations` | Scope limits that apply to every run. |
 

@@ -10,7 +10,9 @@ import math
 from typing import Any
 
 # Agreement thresholds. Geometry and indices are parser outputs and should agree
-# to rounding; first-order and ray tolerances follow the qualified cross-check.
+# to rounding. The first-order tolerance is tighter than the cross-check default
+# (1e-4) so that a glass-catalog or conjugate difference of a few ppm still
+# registers; the ray tolerance is 0.1 um at the image.
 GEOMETRY_ATOL_MM = 1e-9
 INDEX_ATOL = 1e-7
 FIRST_ORDER_RTOL = 1e-6
@@ -29,6 +31,45 @@ CATEGORIES = {
 # each on top of the previous one.
 EXPERIMENTS = {"material_catalog_swap": "material_catalog", "object_distance": "object_distance",
                "ray_aiming": "ray_aiming"}
+
+
+# Importer findings that make the output comparison meaningless: no experiment
+# runs and the status cannot be AGREE or EXPLAINED.
+BLOCKING_DETAILS = {"surface count differs", "wavelengths differ", "primary wavelength differs",
+                    "fields differ", "rays traced at different wavelengths"}
+PROBE_KEYS = ("engine", "wavelengths_um", "primary_wavelength_um", "fields", "stop_index", "surfaces",
+              "first_order", "rays")
+
+
+class ProbeError(ValueError):
+    """A probe report is incomplete, so the two engines cannot be compared."""
+
+
+def validate_probe(probe: dict) -> None:
+    missing = [key for key in PROBE_KEYS if key not in probe]
+    missing += [f"first_order.{key}" for key in ("efl_mm", "fno_working") if key not in probe.get("first_order", {})]
+    missing += [f"fields.{key}" for key in ("normalized", "max") if key not in probe.get("fields", {})]
+    if missing:
+        raise ProbeError(f"{probe.get('engine', 'probe')} report is missing {', '.join(missing)}")
+    wavelengths = len(probe["wavelengths_um"])
+    short = [s["index"] for s in probe["surfaces"] if len(s["n"]) != wavelengths]
+    if short:
+        raise ProbeError(f"{probe['engine']} report has {wavelengths} wavelengths but a different number "
+                         f"of indices on surfaces {short}")
+    incomplete = [r.get("field_index") for r in probe["rays"]
+                  if any(key not in r for key in ("field_index", "pupil", "wavelength_um", "x_mm", "y_mm"))]
+    if incomplete:
+        raise ProbeError(f"{probe['engine']} report has incomplete rays in fields {incomplete}")
+    keys = [_ray_key(r) for r in probe["rays"]]
+    if len(keys) != len(set(keys)):
+        raise ProbeError(f"{probe['engine']} report repeats a ray")
+
+
+def _number(value: Any) -> float:
+    """A reported number as float; reports store non-finite values as strings."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return math.nan
+    return float(value)
 
 
 def _length(value: float | None) -> float | None:
@@ -67,10 +108,25 @@ def compare_inputs(a: dict, b: dict) -> list[dict[str, Any]]:
     if [round(w, 9) for w in a["wavelengths_um"]] != [round(w, 9) for w in b["wavelengths_um"]]:
         findings.append({"category": "importer", "detail": "wavelengths differ",
                          "evidence": {a["engine"]: a["wavelengths_um"], b["engine"]: b["wavelengths_um"]}})
+    if round(a["primary_wavelength_um"], 9) != round(b["primary_wavelength_um"], 9):
+        findings.append({"category": "importer", "detail": "primary wavelength differs",
+                         "evidence": {a["engine"]: a["primary_wavelength_um"],
+                                      b["engine"]: b["primary_wavelength_um"]}})
+    fa, fb = a["fields"], b["fields"]
+    if (not _rel(_number(fa["max"]), _number(fb["max"])) <= 1e-9 or len(fa["normalized"]) != len(fb["normalized"])
+            or any(not abs(p - q) <= 1e-9 for u, v in zip(fa["normalized"], fb["normalized"]) for p, q in zip(u, v))):
+        findings.append({"category": "importer", "detail": "fields differ",
+                         "evidence": {a["engine"]: fa, b["engine"]: fb}})
+    wb = {_ray_key(r): round(r["wavelength_um"], 9) for r in b["rays"]}
+    ray_wavelengths = sorted({(round(r["wavelength_um"], 9), wb[_ray_key(r)]) for r in a["rays"]
+                              if _ray_key(r) in wb and round(r["wavelength_um"], 9) != wb[_ray_key(r)]})
+    if ray_wavelengths:
+        findings.append({"category": "importer", "detail": "rays traced at different wavelengths",
+                         "evidence": {"pairs_um": [list(p) for p in ray_wavelengths]}})
     za, zb = sa[0]["thickness_mm"], sb[0]["thickness_mm"]
     if _same_length(za, zb) and (za is None) != (zb is None):
         finite = za if za is not None else zb
-        efl = a["first_order"]["efl_mm"]
+        efl = _number(a["first_order"]["efl_mm"])
         findings.append({"category": "object_distance", "surface": 0,
                          "detail": "object at infinity in one engine, at a large finite distance in the other",
                          "evidence": {a["engine"]: za, b["engine"]: zb, "finite_distance_mm": finite,
@@ -100,10 +156,13 @@ def compare_inputs(a: dict, b: dict) -> list[dict[str, Any]]:
 def compare_first_order(a: dict, b: dict) -> list[dict[str, Any]]:
     findings = []
     for key in ("efl_mm", "fno_working"):
-        p, q = a["first_order"][key], b["first_order"][key]
-        if _rel(p, q) > FIRST_ORDER_RTOL:
-            findings.append({"category": "first_order", "metric": key,
-                             "evidence": {a["engine"]: p, b["engine"]: q, "relative_delta": (p - q) / q}})
+        raw_p, raw_q = a["first_order"][key], b["first_order"][key]
+        p, q = _number(raw_p), _number(raw_q)
+        non_finite = [e for e, v in ((a["engine"], p), (b["engine"], q)) if not math.isfinite(v)]
+        if non_finite or _rel(p, q) > FIRST_ORDER_RTOL:
+            findings.append({"category": "first_order", "metric": key, "non_finite": non_finite,
+                             "evidence": {a["engine"]: raw_p, b["engine"]: raw_q,
+                                          "relative_delta": None if non_finite or not q else (p - q) / q}})
     return findings
 
 
@@ -111,26 +170,21 @@ def _ray_key(ray: dict) -> tuple:
     return ray["field_index"], tuple(ray["pupil"])
 
 
-def _coordinate(value: Any) -> float:
-    """Ray coordinate as float; reports store non-finite values as strings."""
-    return float(value) if isinstance(value, (int, float)) else math.nan
-
-
 def compare_rays(a: dict, b: dict) -> list[dict[str, Any]]:
-    rb = {_ray_key(r): r for r in b["rays"]}
+    """Ray differences over the rays of both reports; a ray one report lacks counts as untraced there."""
+    ra, rb = {_ray_key(r): r for r in a["rays"]}, {_ray_key(r): r for r in b["rays"]}
     findings = []
-    for ray in a["rays"]:
-        other = rb.get(_ray_key(ray))
-        if other is None:
-            continue
-        pa = (_coordinate(ray["x_mm"]), _coordinate(ray["y_mm"]))
-        pb = (_coordinate(other["x_mm"]), _coordinate(other["y_mm"]))
+    for key in list(ra) + [k for k in rb if k not in ra]:
+        ray, other = ra.get(key), rb.get(key)
+        pa = (_number(ray["x_mm"]), _number(ray["y_mm"])) if ray else (math.nan, math.nan)
+        pb = (_number(other["x_mm"]), _number(other["y_mm"])) if other else (math.nan, math.nan)
+        missing = [p["engine"] for p, r in ((a, ray), (b, other)) if r is None]
         untraced = [p["engine"] for p, xy in ((a, pa), (b, pb)) if not all(map(math.isfinite, xy))]
         delta = math.hypot(pa[0] - pb[0], pa[1] - pb[1])
         if untraced or delta > RAY_ATOL_MM:
-            kind = "chief" if ray["pupil"] == [0.0, 0.0] else "marginal"
-            findings.append({"category": "real_ray", "field_index": ray["field_index"], "pupil": ray["pupil"],
-                             "ray": kind, "untraced": untraced,
+            findings.append({"category": "real_ray", "field_index": key[0], "pupil": list(key[1]),
+                             "ray": "chief" if key[1] == (0.0, 0.0) else "marginal",
+                             "untraced": untraced, "missing": missing,
                              "evidence": {a["engine"]: None if a["engine"] in untraced else list(pa),
                                           b["engine"]: None if b["engine"] in untraced else list(pb),
                                           "distance_mm": None if untraced else delta}})
@@ -138,6 +192,8 @@ def compare_rays(a: dict, b: dict) -> list[dict[str, Any]]:
 
 
 def compare(a: dict, b: dict) -> dict[str, Any]:
+    validate_probe(a)
+    validate_probe(b)
     return {"inputs": compare_inputs(a, b), "first_order": compare_first_order(a, b),
             "rays": compare_rays(a, b)}
 
@@ -162,21 +218,27 @@ def object_distance_effect(findings: list[dict], fno: float) -> dict[str, float]
             shift = finding["evidence"]["estimated_image_shift_mm"]
             efl = math.sqrt(abs(shift) * distance)
             return {"finite_distance_mm": distance, "image_shift_mm": shift,
-                    "edge_ray_mm": abs(shift) / (2.0 * fno), "relative_working_fno": efl / distance}
+                    "edge_ray_mm": abs(shift) / (2.0 * _number(fno)), "relative_working_fno": efl / distance}
     return None
 
 
 def object_distance_matters(effect: dict[str, float]) -> bool:
-    return effect["edge_ray_mm"] > RAY_ATOL_MM or effect["relative_working_fno"] > FIRST_ORDER_RTOL
+    """False only when both estimates are finite and below tolerance."""
+    return not (effect["edge_ray_mm"] <= RAY_ATOL_MM and effect["relative_working_fno"] <= FIRST_ORDER_RTOL)
 
 
 def reference_agreement(probes: dict[str, dict], reference_efl: float | None) -> dict[str, Any] | None:
     if reference_efl is None:
         return None
     return {engine: {"efl_mm": p["first_order"]["efl_mm"],
-                     "relative_delta": (p["first_order"]["efl_mm"] - reference_efl) / reference_efl,
-                     "agrees": _rel(p["first_order"]["efl_mm"], reference_efl) <= FIRST_ORDER_RTOL}
+                     "relative_delta": (_number(p["first_order"]["efl_mm"]) - reference_efl) / reference_efl,
+                     "agrees": _rel(_number(p["first_order"]["efl_mm"]), reference_efl) <= FIRST_ORDER_RTOL}
             for engine, p in probes.items()} | {"reference_efl_mm": reference_efl}
+
+
+def blocking(inputs: list[dict]) -> list[dict]:
+    """Input findings after which the outputs no longer describe the same rays."""
+    return [f for f in inputs if f["category"] == "importer" and f["detail"] in BLOCKING_DETAILS]
 
 
 def _first_order_key(finding: dict) -> str:
@@ -190,8 +252,9 @@ def _ray_finding_key(finding: dict) -> tuple:
 def step(state: dict, result: dict) -> dict[str, Any]:
     """Differences one experiment removed, and the state after it.
 
-    A ray the experiment could not trace keeps its previous state: it is neither
-    credited to the experiment nor counted as a new difference.
+    A ray the experiment could not trace is never credited to it. A difference it
+    had keeps its previous state; a ray that agreed before becomes an untraced
+    difference, so a kept experiment cannot hide it.
     """
     before_rays = {_ray_finding_key(f): f for f in state["rays"]}
     after_rays, untraced = {}, []
@@ -200,8 +263,7 @@ def step(state: dict, result: dict) -> dict[str, Any]:
         previous = before_rays.get(key)
         if finding["untraced"] and not (previous and previous["untraced"]):
             untraced.append(key)
-            if previous:
-                after_rays[key] = previous
+            after_rays[key] = previous or finding
         else:
             after_rays[key] = finding
     after_fo = {_first_order_key(f) for f in result["first_order"]}
@@ -234,7 +296,15 @@ def conclude(baseline: dict, experiments: list[dict]) -> dict[str, Any]:
                            "input_findings": [f for f in inputs if f["category"] == category],
                            "explains": outcome["removed"], "confirmed_by": experiment["name"]})
             state = outcome["state"]
-    first_order, rays = state["first_order"], state["rays"]
+    first_order = state["first_order"]
+    rays = [f for f in state["rays"] if not f["untraced"]]
+    untraced = [f for f in state["rays"] if f["untraced"]]
+    not_comparable = blocking(inputs)
+    if not_comparable:
+        unresolved.append({"category": "not_comparable", "explanation":
+                           "The engines built different surfaces, wavelengths or fields, so their outputs do "
+                           "not describe the same rays; resolve the import difference first.",
+                           "findings": not_comparable})
     confirmed = {c["category"] for c in causes}
     without_effect = [{"category": category, "explanation": CATEGORIES[category],
                        "findings": [f for f in inputs if f["category"] == category]}
@@ -251,7 +321,12 @@ def conclude(baseline: dict, experiments: list[dict]) -> dict[str, Any]:
                            "Real-ray intercepts still differ after the experiments; pupil coordinate "
                            "definitions or vignetting conventions remain candidates.",
                            "findings": rays})
-    differs = bool(baseline["first_order"] or baseline["rays"])
+    if untraced:
+        unresolved.append({"category": "untraced_ray", "explanation":
+                           "These rays have no valid intercept in at least one engine under the final "
+                           "settings (not traced, or missing from a report), so no explanation covers them.",
+                           "findings": untraced})
+    differs = bool(baseline["first_order"] or baseline["rays"] or not_comparable)
     status = "AGREE" if not differs else ("EXPLAINED" if not unresolved else "UNRESOLVED")
     return {"status": status, "causes": causes, "unresolved": unresolved,
             "input_differences_without_confirmed_effect": without_effect}
