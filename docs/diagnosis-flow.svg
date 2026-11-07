@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="300" viewBox="0 0 920 300" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif" font-size="13">
+  <title>How diagnose-optical-discrepancies works</title>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#57606a"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="920" height="300" rx="12" fill="#ffffff"/>
+
+  <!-- input -->
+  <rect x="20" y="118" width="110" height="64" rx="8" fill="#f6f8fa" stroke="#57606a"/>
+  <text x="75" y="146" text-anchor="middle" font-weight="600" fill="#1f2328">.zmx</text>
+  <text x="75" y="164" text-anchor="middle" fill="#57606a" font-size="11">read-only, hashed</text>
+
+  <!-- probes -->
+  <rect x="170" y="56" width="150" height="64" rx="8" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="245" y="84" text-anchor="middle" font-weight="600" fill="#1f2328">Optiland probe</text>
+  <text x="245" y="102" text-anchor="middle" fill="#57606a" font-size="11">pinned, source-checked</text>
+  <rect x="170" y="180" width="150" height="64" rx="8" fill="#ddf4ff" stroke="#0969da"/>
+  <text x="245" y="208" text-anchor="middle" font-weight="600" fill="#1f2328">RayOptics probe</text>
+  <text x="245" y="226" text-anchor="middle" fill="#57606a" font-size="11">pinned, source-checked</text>
+  <path d="M130,140 L168,92" stroke="#57606a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M130,160 L168,208" stroke="#57606a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- compare -->
+  <rect x="360" y="98" width="180" height="104" rx="8" fill="#f6f8fa" stroke="#57606a"/>
+  <text x="450" y="124" text-anchor="middle" font-weight="600" fill="#1f2328">Compare</text>
+  <text x="450" y="146" text-anchor="middle" fill="#1f2328" font-size="12">surfaces, stop, glass, fields</text>
+  <text x="450" y="166" text-anchor="middle" fill="#1f2328" font-size="12">EFL, working F/#</text>
+  <text x="450" y="186" text-anchor="middle" fill="#1f2328" font-size="12">real-ray intercepts</text>
+  <path d="M320,88 L358,130" stroke="#57606a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M320,212 L358,170" stroke="#57606a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- experiments -->
+  <rect x="580" y="78" width="170" height="144" rx="8" fill="#fff8c5" stroke="#9a6700"/>
+  <text x="665" y="102" text-anchor="middle" font-weight="600" fill="#1f2328">Experiments on Optiland</text>
+  <text x="665" y="128" text-anchor="middle" fill="#1f2328" font-size="12">1. glass-catalog swap</text>
+  <text x="665" y="150" text-anchor="middle" fill="#1f2328" font-size="12">2. finite object distance</text>
+  <text x="665" y="172" text-anchor="middle" fill="#1f2328" font-size="12">3. real ray aiming</text>
+  <text x="665" y="200" text-anchor="middle" fill="#57606a" font-size="11">kept only if it helps</text>
+  <path d="M540,150 L578,150" stroke="#57606a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <!-- outcomes -->
+  <rect x="790" y="62" width="110" height="44" rx="8" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="845" y="89" text-anchor="middle" font-weight="600" fill="#1a7f37">AGREE</text>
+  <rect x="790" y="128" width="110" height="44" rx="8" fill="#dafbe1" stroke="#1a7f37"/>
+  <text x="845" y="155" text-anchor="middle" font-weight="600" fill="#1a7f37">EXPLAINED</text>
+  <rect x="790" y="194" width="110" height="44" rx="8" fill="#ffebe9" stroke="#cf222e"/>
+  <text x="845" y="221" text-anchor="middle" font-weight="600" fill="#cf222e">UNRESOLVED</text>
+  <path d="M750,140 L788,90" stroke="#57606a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M750,150 L788,150" stroke="#57606a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+  <path d="M750,160 L788,210" stroke="#57606a" stroke-width="1.5" fill="none" marker-end="url(#arrow)"/>
+
+  <text x="460" y="280" text-anchor="middle" fill="#57606a" font-size="11">Every confirmed cause names the experiment that removed the difference; anything left is reported as unresolved.</text>
+</svg>

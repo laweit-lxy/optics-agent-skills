@@ -16,9 +16,11 @@ Agent skills for optical design that you can check. An AI coding agent (Claude C
 
 Every lens-design program imports a `.zmx` file a little differently. A single engine reporting a number is not evidence. Here three engines meet on the same prescriptions, and the diagnosis traces every difference to a cause it can reproduce:
 
+![How the diagnosis works: both engines probe the same .zmx, the reports are compared, and elimination experiments on Optiland either explain each difference or leave it unresolved](docs/diagnosis-flow.svg)
+
 | Sample | OpticStudio 22.2.2 EFL (mm) | RayOptics EFL (mm) | Optiland EFL (mm) | Diagnosis |
 | --- | --- | --- | --- | --- |
-| Cooke triplet | 50.000394 | 50.000394 | 49.999783 | The file declares `GCAT HIKARI SCHOTT`. OpticStudio and RayOptics take F2 from Hikari, Optiland from Schott (index Δ ≈ 4.6e-6). With Hikari F2, Optiland gives 50.000394 mm. |
+| Cooke triplet | 50.000394 | 50.000394 | 49.999783 | The file declares `GCAT HIKARI SCHOTT`. OpticStudio and RayOptics take F2 from Hikari, Optiland 0.6.3 from Schott (index Δ ≈ 4.6e-6). With Hikari F2, Optiland gives 50.000394 mm. Optiland's main branch now resolves glasses from the file's GCAT catalogs ([optiland#930](https://github.com/optiland/optiland/issues/930)). |
 | Double-Gauss | 100.003748 | 100.003748 | 100.003748 | Four glasses resolve to different catalogs with no first-order effect. |
 | Hubble | 57600.081 | 57600.081 | 57600.081 | RayOptics puts the infinite object at 1e10 mm. That shifts the image by f²/z = 0.33 mm and moves the F/24 edge rays by 6.9 µm and the working F-number by 4.8e-5. With the same object distance, Optiland matches. |
 
