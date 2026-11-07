@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagnose Optical Discrepancies"
+  short_description: "Explain why Optiland and RayOptics disagree on a ZMX"
+  default_prompt: "Use $diagnose-optical-discrepancies to find out why two optics engines give different results for a local ZMX prescription."

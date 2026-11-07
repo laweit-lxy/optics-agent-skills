@@ -1,0 +1,4 @@
+interface:
+  display_name: "Optical Design Analysis"
+  short_description: "Reproducible Chromatix and Prysm optical analysis"
+  default_prompt: "Use $analyze-optical-designs to model and verify an optical design with pinned Chromatix and Prysm workflows."

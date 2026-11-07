@@ -10,8 +10,8 @@
 Install into a dedicated virtual environment (Git is required for the pinned source):
 
 ```bash
-python3.12 -m venv .venv-crosscheck
-.venv-crosscheck/bin/python -m pip install -r requirements.txt   # Windows: .venv-crosscheck\Scripts\python.exe
+python3.12 -m venv .venv-cross-check-optical-designs
+.venv-cross-check-optical-designs/bin/python -m pip install -r requirements.txt   # Windows: .venv-cross-check-optical-designs\Scripts\python.exe
 ```
 
 ## Optional material database

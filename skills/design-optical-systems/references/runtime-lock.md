@@ -12,8 +12,8 @@
 Install into a dedicated virtual environment:
 
 ```bash
-python3.12 -m venv .venv-design
-.venv-design/bin/python -m pip install -r requirements.txt   # Windows: .venv-design\Scripts\python.exe
+python3.12 -m venv .venv-design-optical-systems
+.venv-design-optical-systems/bin/python -m pip install -r requirements.txt   # Windows: .venv-design-optical-systems\Scripts\python.exe
 ```
 
 ## Process-local behavior

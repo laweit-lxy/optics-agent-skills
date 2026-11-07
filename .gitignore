@@ -3,3 +3,7 @@ __pycache__/
 *.pyc
 .pytest_cache/
 out/
+out-*.log
+*.egg-info/
+optics-agent-output/
+optics-diagnosis/

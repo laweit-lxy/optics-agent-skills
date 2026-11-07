@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "optics-agent-skills"
+version = "0.2.0"
+description = "Shared core for optics-agent-skills: engine orchestration, cross-engine discrepancy diagnosis and an MCP server."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+mcp = ["mcp==2.3.0"]
+test = ["pytest"]
+
+[project.scripts]
+optics-agent-skills = "optics_agent_skills.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/laweit-lxy/optics-agent-skills"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

@@ -17,12 +17,14 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        skill: [design-optical-systems, cross-check-optical-designs]
+        skill: [design-optical-systems, cross-check-optical-designs, analyze-optical-designs]
         include:
           - skill: design-optical-systems
             tests: tests/test_design_optical_systems.py
           - skill: cross-check-optical-designs
             tests: tests/test_cross_check_optical_designs.py
+          - skill: analyze-optical-designs
+            tests: tests/test_analyze_optical_designs.py
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -36,3 +38,66 @@ jobs:
         run: python -m pytest -v ${{ matrix.tests }}
         env:
           PYTHONUTF8: "1"
+
+  core:
+    name: core and MCP / ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.12"]
+        include:
+          - os: ubuntu-latest
+            python: "3.10"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install core with MCP extra
+        run: python -m pip install -e ".[mcp,test]"
+      - name: Run core and MCP tests
+        run: python -m pytest -v tests/test_diagnosis_core.py tests/test_mcp_server.py
+        env:
+          PYTHONUTF8: "1"
+
+  diagnose:
+    name: diagnose-optical-discrepancies / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            skills/design-optical-systems/requirements.txt
+            skills/cross-check-optical-designs/requirements.txt
+      - name: Install both engine environments
+        run: |
+          bin=$([ "$RUNNER_OS" = "Windows" ] && echo Scripts || echo bin)
+          for skill in design-optical-systems cross-check-optical-designs; do
+            python -m venv ".venv-$skill"
+            ".venv-$skill/$bin/python" -m pip install -r "skills/$skill/requirements.txt" pytest
+          done
+          echo "TEST_PYTHON=$PWD/.venv-design-optical-systems/$bin/python" >> "$GITHUB_ENV"
+      - name: Run diagnosis tests
+        # Fail rather than skip when an engine environment is missing.
+        run: |
+          "$TEST_PYTHON" -c "import optics_agent_skills.engines as e; e.interpreter('design'); e.interpreter('crosscheck')"
+          "$TEST_PYTHON" -m pytest -v tests/test_diagnose_optical_discrepancies.py
+        env:
+          PYTHONUTF8: "1"
+          PYTHONPATH: src
