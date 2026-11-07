@@ -42,16 +42,21 @@ def direct_url_commit(distribution: str) -> str | None:
 
 
 def chromatix_check() -> dict[str, Any]:
-    field = cx.plane_wave(
-        shape=(32, 32),
-        dx=1.0e-6,
-        spectrum=532.0e-9,
-        power=1.0,
-    )
-    focused = cx.ff_lens(field, f=10.0e-3, n=1.0)
-    input_power = float(np.asarray(field.power).squeeze())
-    output_power = float(np.asarray(focused.power).squeeze())
-    finite = bool(np.isfinite(np.asarray(focused.intensity)).all())
+    # Float64 for this check only: in float32 the power sum (also used by
+    # plane_wave to normalize) depends on the CPU's reduction order by up to
+    # ~1e-5, which would make the 1e-6 normalization test machine-dependent.
+    with jax.enable_x64(True):
+        field = cx.plane_wave(
+            shape=(32, 32),
+            dx=1.0e-6,
+            spectrum=532.0e-9,
+            power=1.0,
+        )
+        focused = cx.ff_lens(field, f=10.0e-3, n=1.0)
+        dtype = str(np.asarray(field.u).dtype)
+        input_power = float(np.asarray(field.power).squeeze())
+        output_power = float(np.asarray(focused.power).squeeze())
+        finite = bool(np.isfinite(np.asarray(focused.intensity)).all())
     relative_power_error = abs(output_power - input_power) / input_power
     passed = (
         finite
@@ -64,6 +69,7 @@ def chromatix_check() -> dict[str, Any]:
         "output_power": output_power,
         "relative_power_error": relative_power_error,
         "finite_intensity": finite,
+        "dtype": dtype,
     }
 
 
