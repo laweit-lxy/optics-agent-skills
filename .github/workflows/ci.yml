@@ -1,0 +1,38 @@
+name: regression
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  skill:
+    name: ${{ matrix.skill }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        skill: [design-optical-systems, cross-check-optical-designs]
+        include:
+          - skill: design-optical-systems
+            tests: tests/test_design_optical_systems.py
+          - skill: cross-check-optical-designs
+            tests: tests/test_cross_check_optical_designs.py
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: skills/${{ matrix.skill }}/requirements.txt
+      - name: Install pinned environment
+        run: python -m pip install -r skills/${{ matrix.skill }}/requirements.txt pytest
+      - name: Run regression tests
+        run: python -m pytest -v ${{ matrix.tests }}
+        env:
+          PYTHONUTF8: "1"

@@ -1,0 +1,41 @@
+{
+  "status": "ok",
+  "source_sha256": "3fbd14de303836090d1deac818ecb4ee405dd8ed5b5959dbdeb0327fd830c2b3",
+  "opticstudio_version": "22.2.2",
+  "reference_context": {
+    "wavelength_nm": 550.0,
+    "independent_native_probe_sha256": "4dfcac1187ee9637dacd8836c82e3ceedc339c7af37d2ff21c637f8c4650a0af"
+  },
+  "system": {
+    "wavelengths": [
+      {
+        "index": 1,
+        "wavelength_um": 0.48,
+        "primary": false
+      },
+      {
+        "index": 2,
+        "wavelength_um": 0.55,
+        "primary": true
+      },
+      {
+        "index": 3,
+        "wavelength_um": 0.65,
+        "primary": false
+      }
+    ]
+  },
+  "first_order": {
+    "effective_focal_length_mm": {
+      "value": 50.00039433779173
+    },
+    "paraxial_f_number": {
+      "value": 5.000039433779174,
+      "definition": "ISFN"
+    },
+    "working_f_number": {
+      "value": 4.978262589521855,
+      "definition": "WFNO"
+    }
+  }
+}

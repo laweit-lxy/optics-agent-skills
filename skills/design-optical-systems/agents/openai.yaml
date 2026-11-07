@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Optical Systems"
+  short_description: "Analyze and verify lens prescriptions with Optiland"
+  default_prompt: "Use $design-optical-systems to analyze a lens prescription and produce reproducible optical metrics."

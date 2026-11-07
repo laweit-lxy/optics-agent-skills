@@ -1,0 +1,12 @@
+{
+  "name": "optics-agent-skills",
+  "owner": { "name": "laweit-lxy" },
+  "plugins": [
+    {
+      "name": "optics-agent-skills",
+      "source": "./",
+      "description": "Optical design agent skills: reproducible Optiland lens analysis and independent RayOptics cross-checks of Zemax .zmx prescriptions.",
+      "version": "0.1.0"
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cross-check Optical Designs"
+  short_description: "Read-only RayOptics checks for ZMX prescriptions"
+  default_prompt: "Use $cross-check-optical-designs to independently inspect a local ZMX prescription and compare first-order optical metrics."
