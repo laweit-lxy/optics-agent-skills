@@ -1,0 +1,8 @@
+{
+  "imports": [
+    "cadquery",
+    "OCP",
+    "numpy",
+    "scipy"
+  ]
+}

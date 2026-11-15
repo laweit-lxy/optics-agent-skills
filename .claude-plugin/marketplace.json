@@ -5,8 +5,8 @@
     {
       "name": "optics-agent-skills",
       "source": "./",
-      "description": "Optical design agent skills: pinned Optiland and RayOptics analysis of Zemax .zmx prescriptions, cross-engine discrepancy diagnosis, Chromatix/Prysm wave optics and an MCP server.",
-      "version": "0.2.1"
+      "description": "Optical design agent skills: pinned Optiland and RayOptics analysis of Zemax .zmx prescriptions, cross-engine discrepancy diagnosis, Chromatix/Prysm wave optics, RASCAL wavelength calibration, CadQuery optomechanical parts and an MCP server.",
+      "version": "0.2.2"
     }
   ]
 }

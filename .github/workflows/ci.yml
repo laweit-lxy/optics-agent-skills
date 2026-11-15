@@ -17,7 +17,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        skill: [design-optical-systems, cross-check-optical-designs, analyze-optical-designs]
+        skill:
+          - design-optical-systems
+          - cross-check-optical-designs
+          - analyze-optical-designs
+          - calibrate-spectral-wavelength
+          - build-optomechanical-parts
         include:
           - skill: design-optical-systems
             tests: tests/test_design_optical_systems.py
@@ -25,6 +30,10 @@ jobs:
             tests: tests/test_cross_check_optical_designs.py
           - skill: analyze-optical-designs
             tests: tests/test_analyze_optical_designs.py
+          - skill: calibrate-spectral-wavelength
+            tests: tests/test_calibrate_spectral_wavelength.py
+          - skill: build-optomechanical-parts
+            tests: tests/test_build_optomechanical_parts.py
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Calibrate Spectral Wavelength"
+  short_description: "Pixel-to-wavelength calibration with pinned RASCAL"
+  default_prompt: "Use $calibrate-spectral-wavelength to fit a pixel-to-wavelength polynomial from supplied peak positions and a line list."
