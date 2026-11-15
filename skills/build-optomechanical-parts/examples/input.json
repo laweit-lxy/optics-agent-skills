@@ -1,0 +1,32 @@
+{
+  "units": "mm",
+  "parts": [
+    {
+      "name": "mount",
+      "type": "rectangular_mount",
+      "width_mm": 60,
+      "height_mm": 50,
+      "thickness_mm": 8,
+      "aperture_radius_mm": 12,
+      "mounting_hole_radius_mm": 2,
+      "mounting_hole_centers_mm": [[-23, -18], [-23, 18], [23, -18], [23, 18]]
+    },
+    {
+      "name": "tube",
+      "type": "baffle_tube",
+      "outer_radius_mm": 20,
+      "inner_radius_mm": 18,
+      "length_mm": 80,
+      "baffles": [
+        {"z_mm": 20, "thickness_mm": 2, "aperture_radius_mm": 15},
+        {"z_mm": 50, "thickness_mm": 2, "aperture_radius_mm": 15}
+      ]
+    }
+  ],
+  "assembly": {
+    "placements": [
+      {"part": "mount", "matrix": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]},
+      {"part": "tube", "translation_mm": [3,-2,20], "axis": [0,1,0], "angle_deg": 12}
+    ]
+  }
+}

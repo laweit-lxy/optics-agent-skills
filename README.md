@@ -11,6 +11,8 @@ Agent skills for optical design that you can check. An AI coding agent (Claude C
 | [`cross-check-optical-designs`](skills/cross-check-optical-designs/SKILL.md) | [RayOptics](https://github.com/mjhoptics/ray-optics) @ `e25bc57` | Independently loads the same `.zmx`, audits surfaces, stop, fields and glass-catalog resolution, and compares EFL, paraxial and real working F-number against an Optiland or OpticStudio report. Returns `PASS`, `MISMATCH` or `FAIL`. |
 | [`diagnose-optical-discrepancies`](skills/diagnose-optical-discrepancies/SKILL.md) | Optiland + RayOptics | Explains a disagreement: compares the prescription each engine built, first-order values and real rays, then runs elimination experiments (glass catalog, object distance, ray aiming). Returns `AGREE`, `EXPLAINED` or `UNRESOLVED` with confirmed causes. |
 | [`analyze-optical-designs`](skills/analyze-optical-designs/SKILL.md) | [Chromatix](https://github.com/chromatix-team/chromatix) + [Prysm](https://github.com/brandondube/prysm) (JAX) | Scalar wave optics: Fresnel/Fraunhofer/angular-spectrum propagation, pupil- and Zernike-based PSF/MTF/OTF, differentiable inverse design. Qualifies against analytic Airy, Strehl and MTF results. |
+| [`calibrate-spectral-wavelength`](skills/calibrate-spectral-wavelength/SKILL.md) | [RASCAL](https://github.com/jveitchmichaelis/rascal) 0.3.11 | Fits a pixel-to-wavelength polynomial from peak positions you supply and a lamp or custom line list. Reports every assignment and rejection, fit and holdout errors, and withholds the coefficients when a check fails. Qualified on a synthetic Hg/Ar/Ne spectrum, not on real lamp data. |
+| [`build-optomechanical-parts`](skills/build-optomechanical-parts/SKILL.md) | [CadQuery](https://github.com/CadQuery/cadquery) 2.8.0 | Builds nominal aperture mounts, baffled tubes and rigid assemblies from dimensions in a JSON file. Exports STEP and STL and checks analytic volume, bounds, the STEP roundtrip and the pose of each placed part. No tolerances, threads or collision checks. |
 
 ## Why cross-check, and why diagnose
 
@@ -33,7 +35,7 @@ Each engine runs in its own pinned Python 3.12 environment, because the engines 
 ```bash
 git clone https://github.com/laweit-lxy/optics-agent-skills
 cd optics-agent-skills
-for skill in design-optical-systems cross-check-optical-designs analyze-optical-designs; do
+for skill in design-optical-systems cross-check-optical-designs analyze-optical-designs calibrate-spectral-wavelength build-optomechanical-parts; do
   python3.12 -m venv .venv-$skill && .venv-$skill/bin/pip install -r skills/$skill/requirements.txt
 done
 ```
@@ -71,7 +73,7 @@ Install from a clone with `pip install -e`. The core runs the scripts under `ski
 }
 ```
 
-Tools: `list_samples`, `analyze_prescription`, `cross_check_prescription`, `diagnose_discrepancies`, `wave_optics_self_test`, `server_info`. They take absolute local paths, never modify the input, and write every report into a new directory under `OPTICS_SKILLS_OUTPUT_ROOT`.
+Tools: `list_samples`, `analyze_prescription`, `cross_check_prescription`, `diagnose_discrepancies`, `wave_optics_self_test`, `server_info`. The calibration and optomechanical skills are not exposed as tools; run their scripts directly. They take absolute local paths, never modify the input, and write every report into a new directory under `OPTICS_SKILLS_OUTPUT_ROOT`.
 
 ## Try it
 
@@ -101,6 +103,10 @@ Each test file runs in the environment of the skill it covers. The diagnosis tes
 .venv-design-optical-systems/bin/python -m pytest tests/test_design_optical_systems.py tests/test_diagnosis_core.py tests/test_diagnose_optical_discrepancies.py
 .venv-cross-check-optical-designs/bin/python -m pytest tests/test_cross_check_optical_designs.py
 .venv-analyze-optical-designs/bin/python -m pytest tests/test_analyze_optical_designs.py
+.venv-calibrate-spectral-wavelength/bin/pip install pytest
+.venv-calibrate-spectral-wavelength/bin/python -m pytest tests/test_calibrate_spectral_wavelength.py
+.venv-build-optomechanical-parts/bin/pip install pytest
+.venv-build-optomechanical-parts/bin/python -m pytest tests/test_build_optomechanical_parts.py
 .venv-mcp/bin/pip install -e ".[mcp,test]" && .venv-mcp/bin/python -m pytest tests/test_mcp_server.py
 ```
 
@@ -112,4 +118,4 @@ See [ROADMAP.md](ROADMAP.md) for what comes next: radiometric calibration, a sta
 
 ## License
 
-MIT. The engines keep their own licenses (Optiland MIT, RayOptics BSD-3-Clause, Chromatix MIT, Prysm MIT) and are installed as dependencies, not vendored.
+MIT. The engines keep their own licenses (Optiland MIT, RayOptics BSD-3-Clause, Chromatix MIT, Prysm MIT, RASCAL BSD-3-Clause, CadQuery Apache-2.0) and are installed as dependencies, not vendored.

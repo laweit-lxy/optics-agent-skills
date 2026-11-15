@@ -1,0 +1,260 @@
+{
+  "peaks_pixel": [
+    20.610458517533914,
+    87.62571416961732,
+    158.30666567663334,
+    184.45057429838988,
+    215.40746649349006,
+    237.34529678961187,
+    289.38302595651714,
+    389.4024632718627,
+    421.0321826569079,
+    456.0864754530433,
+    503.0269218873713,
+    588.3349983682637,
+    613.9346141461542,
+    632.190289045527,
+    684.62234011409,
+    725.1044939608458,
+    809.5450159502402,
+    862.3171406999714,
+    904.9128715491015,
+    943.5826463417643,
+    1037.3915718000985,
+    1063.5310151588583,
+    1090.0822936704806,
+    1131.5602004484424,
+    1163.2960973548022,
+    1244.946332167737,
+    1269.9185013830252
+  ],
+  "peak_sigma_pixel": [
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15,
+    0.15
+  ],
+  "num_pixels": 1301,
+  "atlas": {
+    "lines": [
+      {
+        "element": "Hg",
+        "wavelength_nm": 404.6501977857923,
+        "relative_intensity": 12000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 419.8036585418198,
+        "relative_intensity": 700.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 427.5492718419654,
+        "relative_intensity": 700.0
+      },
+      {
+        "element": "Hg",
+        "wavelength_nm": 435.82675405089924,
+        "relative_intensity": 12000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 448.80232502211794,
+        "relative_intensity": 3000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 453.7684416172139,
+        "relative_intensity": 10000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 465.6321723429088,
+        "relative_intensity": 3000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 470.4322417379364,
+        "relative_intensity": 15000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 488.4841821256735,
+        "relative_intensity": 10000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 495.6957316128017,
+        "relative_intensity": 10000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 503.7673780875367,
+        "relative_intensity": 5000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 514.4931671327947,
+        "relative_intensity": 5000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 529.8107914118231,
+        "relative_intensity": 1500.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 534.1011942642873,
+        "relative_intensity": 10000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 540.0478903260298,
+        "relative_intensity": 20000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 556.2681101490605,
+        "relative_intensity": 5000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 565.65723196738,
+        "relative_intensity": 5000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 576.4330703786623,
+        "relative_intensity": 7000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 585.2398428633823,
+        "relative_intensity": 20000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 597.5443049775707,
+        "relative_intensity": 6000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 607.424490383102,
+        "relative_intensity": 10000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 616.3499744237362,
+        "relative_intensity": 10000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 626.639970734032,
+        "relative_intensity": 10000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 638.2894201873836,
+        "relative_intensity": 10000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 644.4613607540742,
+        "relative_intensity": 1500.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 650.6428680852222,
+        "relative_intensity": 15000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 667.8174958705588,
+        "relative_intensity": 5000.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 673.792949852337,
+        "relative_intensity": 700.0
+      },
+      {
+        "element": "Ar",
+        "wavelength_nm": 687.1184661504615,
+        "relative_intensity": 150.0
+      },
+      {
+        "element": "Ne",
+        "wavelength_nm": 692.9361836158523,
+        "relative_intensity": 100000.0
+      }
+    ]
+  },
+  "wavelength_range_nm": [
+    400.0,
+    700.0
+  ],
+  "wavelength_medium": "air",
+  "polynomial_degree": 2,
+  "seed": 20261115,
+  "max_chord_deviation_nm": 2.0,
+  "air_conditions": {
+    "temperature_K": 273.15,
+    "pressure_Pa": 101325.0,
+    "relative_humidity_percent": 0.0
+  },
+  "holdout_lines": [
+    {
+      "pixel": 121.65266160933815,
+      "wavelength_nm": 427.5492718419654,
+      "sigma_pixel": 0.15
+    },
+    {
+      "pixel": 310.58378395572595,
+      "wavelength_nm": 470.4322417379364,
+      "sigma_pixel": 0.15
+    },
+    {
+      "pixel": 569.6204231261062,
+      "wavelength_nm": 529.8107914118231,
+      "sigma_pixel": 0.15
+    },
+    {
+      "pixel": 771.4803542392698,
+      "wavelength_nm": 576.4330703786623,
+      "sigma_pixel": 0.15
+    },
+    {
+      "pixel": 987.2304711056472,
+      "wavelength_nm": 626.639970734032,
+      "sigma_pixel": 0.15
+    },
+    {
+      "pixel": 1188.8745661011685,
+      "wavelength_nm": 673.792949852337,
+      "sigma_pixel": 0.15
+    }
+  ]
+}

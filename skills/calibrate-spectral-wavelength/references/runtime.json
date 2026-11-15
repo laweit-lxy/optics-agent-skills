@@ -1,0 +1,9 @@
+{
+  "imports": [
+    "rascal",
+    "rascal.calibrator",
+    "rascal.atlas",
+    "numpy",
+    "scipy"
+  ]
+}

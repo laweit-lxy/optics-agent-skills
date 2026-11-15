@@ -1,0 +1,4 @@
+interface:
+  display_name: "Build Optomechanical Parts"
+  short_description: "Parametric mounts and baffle tubes with pinned CadQuery"
+  default_prompt: "Use $build-optomechanical-parts to build a nominal mount or baffled tube from dimensions and export STEP and STL."
