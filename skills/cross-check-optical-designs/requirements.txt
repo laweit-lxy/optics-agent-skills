@@ -1,4 +1,4 @@
-rayoptics @ git+https://github.com/mjhoptics/ray-optics.git@e25bc579116d31ed97fa1632f871e2801e8e956e
+rayoptics @ git+https://github.com/mjhoptics/ray-optics.git@5009d933ae525defcd799344ad94f80cc6177892
 anytree==2.13.0
 asttokens==3.0.2
 certifi==2026.7.22

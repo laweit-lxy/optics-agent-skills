@@ -20,7 +20,7 @@ This skill only consumes reference JSON that already exists. It does not run `de
 ## Workflow
 
 1. Verify the input path and analysis goal from the request and available files. Ask only when multiple inputs or goals cannot be reliably distinguished.
-2. Choose the output path. If the user gave none, create `<current working directory>/rayoptics-crosscheck/` if needed and write `<zmx stem>-<UTC yyyyMMddTHHmmssZ>.json` there; never write into the source prescription's directory unless the user asks. The entry does not create parent directories. Report the chosen path.
+2. Choose the output path. If the user gave none, create `<current working directory>/rayoptics-crosscheck/` if needed and write `<zmx stem>-<UTC yyyyMMddTHHmmssZ>.json` there; never write into the source prescription's directory unless the user asks. The entry creates missing parent directories of the output path. Report the chosen path.
 3. Decide whether this is inspection-only or a comparison against a trusted reference JSON.
 4. Run the entry below with the pinned environment's interpreter only.
 5. Read the report fields in the table below. Required unavailable metrics or a wavelength mismatch fail; never suppress a requested F-number comparison.
@@ -56,7 +56,7 @@ Interpret the exit and report status together:
 
 ## Tolerances
 
-The defaults are relative 1e-4 and absolute 1e-8. They are the qualified thresholds for the three reference samples; Hubble's F-number residual is about 4.8e-5 relative, so there is little margin. Pass `--relative-tolerance` or `--absolute-tolerance` only when the user explicitly asks for different values, and always state the values used (`comparison.relative_tolerance`, `comparison.absolute_tolerance`) in the reply. Never loosen a tolerance to turn `MISMATCH` into `PASS`.
+The defaults are relative 1e-4 and absolute 1e-8. They are the qualified thresholds for the three reference samples; with the pinned RayOptics every residual is below 5e-9 relative (the largest is Cooke's F-number, 4.9e-9; Hubble's is 1.4e-10). Pass `--relative-tolerance` or `--absolute-tolerance` only when the user explicitly asks for different values, and always state the values used (`comparison.relative_tolerance`, `comparison.absolute_tolerance`) in the reply. Never loosen a tolerance to turn `MISMATCH` into `PASS`.
 
 ## Report fields (schema 2.0)
 
@@ -64,6 +64,7 @@ The defaults are relative 1e-4 and absolute 1e-8. They are the qualified thresho
 | --- | --- |
 | `status` | `PASS`, `INSPECTED`, `MISMATCH` or `FAIL`; read with the exit code. |
 | `checks`, `failed_checks` | Integrity, source-hash, load and finite-metric gates, and the names of any that failed. |
+| `model.system_units` | The file's length unit. Lengths, curvatures, first-order lengths and height fields in `model` are converted to mm (`optical_spec.field_units` says `mm` or `deg`); `model.import_info` is kept as RayOptics returned it, in system units. |
 | `model.catalog_resolution` | Per-surface glass name, declared GCAT catalog and resolved catalog. |
 | `model.metric_definitions` | How each compared quantity is defined. |
 | `model.working_f_number_analysis` | Real-ray working F-number result, or why it is unavailable. |
