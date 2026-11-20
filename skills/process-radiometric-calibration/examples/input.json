@@ -1,0 +1,20 @@
+{
+  "wavelength_medium": "vacuum",
+  "srf": {"csv": "srf.csv", "wavelength_unit": "nm"},
+  "radiance": {"csv": "radiance.csv", "wavelength_unit": "µm", "value_unit": "W/m^2/sr/nm"},
+  "toa": {
+    "acquisition_date": "2025-12-31",
+    "solar_zenith_deg": 60,
+    "solar_spectrum": {
+      "csv": "solar.csv",
+      "columns": ["wavelength_nm", "irradiance"],
+      "wavelength_unit": "nm",
+      "value_unit": "W/m^2/nm"
+    },
+    "uncertainty": {
+      "inputs": {"band_radiance": {"distribution": "normal", "standard_uncertainty": 2}},
+      "seed": 20261119,
+      "samples": 100000
+    }
+  }
+}
