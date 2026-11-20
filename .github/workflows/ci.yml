@@ -26,9 +26,14 @@ jobs:
           - process-radiometric-calibration
         include:
           - skill: design-optical-systems
-            tests: tests/test_design_optical_systems.py
+            tests: >-
+              tests/test_design_optical_systems.py
+              tests/test_lens_starting_points.py::test_catalog
+              tests/test_lens_starting_points.py::test_optiland
           - skill: cross-check-optical-designs
-            tests: tests/test_cross_check_optical_designs.py
+            tests: >-
+              tests/test_cross_check_optical_designs.py
+              tests/test_lens_starting_points.py::test_rayoptics
           - skill: analyze-optical-designs
             tests: tests/test_analyze_optical_designs.py
           - skill: calibrate-spectral-wavelength

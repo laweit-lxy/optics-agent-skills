@@ -17,6 +17,7 @@ Generate reproducible optical-design metrics while keeping prescription source f
 4. For a local absolute-path `.zmx`, run the script with `--input-zmx` and write to a new JSON output. UNC paths and any symlink/junction path component are rejected; the report can never replace the source, including with `--force`.
 5. Review every `checks` entry and the `limitations` section. Treat a failed or skipped metric as unresolved rather than filling it with an estimate.
 
+When choosing a classic lens starting point, use the [starting-point catalog](../../lens-starting-points/README.md) in the full repository checkout, then analyze the selected `.zmx` with `--input-zmx`. A skill-only installation does not include the catalog or prescriptions.
 
 ## Adjacent Skills
 
