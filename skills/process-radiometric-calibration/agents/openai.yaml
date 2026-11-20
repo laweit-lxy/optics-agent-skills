@@ -1,0 +1,4 @@
+interface:
+  display_name: "Process Radiometric Calibration"
+  short_description: "SRF band convolution, TOA reflectance and uncertainty"
+  default_prompt: "Use $process-radiometric-calibration to convolve a local radiance spectrum with a band SRF, then compute TOA reflectance with an uncertainty comparison if supplied."
