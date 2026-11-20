@@ -110,6 +110,17 @@ Each test file runs in the environment of the skill it covers. The diagnosis tes
 .venv-mcp/bin/pip install -e ".[mcp,test]" && .venv-mcp/bin/python -m pytest tests/test_mcp_server.py
 ```
 
+## Releasing
+
+Every remote action (pushing a branch or tag, opening a pull request, creating a GitHub release) needs the maintainer's explicit go-ahead each time. Steps 1, 2 and 4 are local and reversible; step 3 needs a CI run on GitHub, and step 5 publishes.
+
+1. Version: set the same number in `pyproject.toml`, `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
+2. Docs: update the `ROADMAP.md` row for the release (mark it released, list what shipped) and any README section the change touches.
+3. Tests: run the commands above locally. The `regression` workflow (`.github/workflows/ci.yml`) runs only on a push to `main`, a pull request, its weekly schedule or a manual dispatch, so a local commit has no CI result. With the go-ahead, push the release commit to a branch and open a pull request against `main`, then confirm the workflow is green on Linux and Windows for that commit.
+4. Local sync: update the installed copies of the skills on the maintainer's machine from this repository and rerun one skill self-check there, so the installed version matches the release commit that step 5 tags.
+5. Publish: tag `vX.Y.Z` on the release commit, push the tag, create the GitHub release.
+6. Rollback: if a release is bad, restore the previous tag's skills locally and ship a fix as the next patch version. Do not move or delete a published tag.
+
 ## Related
 
 - [ai-zemax-optical-design](https://github.com/Jerry-del975/ai-zemax-optical-design): design loops in Ansys Zemax OpticStudio through ZOS-API. Its reports can serve as cross-check references.
