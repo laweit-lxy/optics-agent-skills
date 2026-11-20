@@ -23,6 +23,7 @@ jobs:
           - analyze-optical-designs
           - calibrate-spectral-wavelength
           - build-optomechanical-parts
+          - process-radiometric-calibration
         include:
           - skill: design-optical-systems
             tests: >-
@@ -39,6 +40,8 @@ jobs:
             tests: tests/test_calibrate_spectral_wavelength.py
           - skill: build-optomechanical-parts
             tests: tests/test_build_optomechanical_parts.py
+          - skill: process-radiometric-calibration
+            tests: tests/test_process_radiometric_calibration.py
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
