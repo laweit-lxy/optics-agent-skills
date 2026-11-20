@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "cooke-triplet",
+      "family": "Cooke triplet",
+      "zmx": "../tests/data/cooke/cooke-6cd4da4.zmx",
+      "sha256": "3fbd14de303836090d1deac818ecb4ee405dd8ed5b5959dbdeb0327fd830c2b3",
+      "source": {
+        "title": "Optiland CookeTriplet sample",
+        "url": "https://github.com/optiland/optiland/blob/6cd4da40cabc82e395231edd4c0ca75b9a15bd75/optiland/samples/objectives.py#L47-L77",
+        "locator": "CookeTriplet constructor at commit 6cd4da4; existing ZMX regression export",
+        "public_status": "Public MIT-licensed sample; no historical prescription is attributed in the source."
+      },
+      "reference": {
+        "basis": "OpticStudio 22.2.2 on the unchanged regression ZMX, not a historical patent value",
+        "fixture": "../tests/data/cooke/cooke-native-reference.json",
+        "efl_mm": 50.00039433779173,
+        "paraxial_f_number": 5.000039433779174,
+        "efl_abs_tolerance_mm": 0.005,
+        "f_number_abs_tolerance": 0.0005
+      },
+      "field_angles_y_deg": [0, 14, 20],
+      "wavelengths_um": [0.48, 0.55, 0.65],
+      "primary_wavelength_um": 0.55,
+      "surface_count": 8,
+      "stop_surface": 4,
+      "glass": "Existing named SK16/F2/SK16 with GCAT HIKARI SCHOTT; no substitution. The upstream constructor requests Schott F2; the exported ZMX resolves to Hikari F2 in RayOptics under the declared order.",
+      "length_scale": 1,
+      "adaptations": "None to the existing regression ZMX. Its entrance pupil diameter is 10 mm."
+    },
+    {
+      "id": "double-gauss",
+      "family": "Double-Gauss",
+      "zmx": "../tests/data/double-gauss/double-gauss-6cd4da4.zmx",
+      "sha256": "da0e064ea2d3b51a0502c733ae6ba8b135f4078bae580c0c481aeeace89d9118",
+      "source": {
+        "title": "Optiland DoubleGauss sample",
+        "url": "https://github.com/optiland/optiland/blob/6cd4da40cabc82e395231edd4c0ca75b9a15bd75/optiland/samples/objectives.py#L80-L119",
+        "locator": "DoubleGauss constructor at commit 6cd4da4; existing ZMX regression export",
+        "public_status": "Public MIT-licensed sample; no historical prescription is attributed in the source."
+      },
+      "reference": {
+        "basis": "OpticStudio 22.2.2 on the unchanged regression ZMX, not a historical patent value",
+        "fixture": "../tests/data/double-gauss/double-gauss-native-reference.json",
+        "efl_mm": 100.00374787083723,
+        "paraxial_f_number": 5.0,
+        "efl_abs_tolerance_mm": 0.01,
+        "f_number_abs_tolerance": 0.0005
+      },
+      "field_angles_y_deg": [0, 10, 14],
+      "wavelengths_um": [0.4861, 0.5876, 0.6563],
+      "primary_wavelength_um": 0.5876,
+      "surface_count": 13,
+      "stop_surface": 6,
+      "glass": "Existing SCHOTT N-SSK2, N-SK2, F5 and N-SK16 catalog glasses; no substitution.",
+      "length_scale": 1,
+      "adaptations": "None to the existing regression ZMX. It specifies image-space F-number 5."
+    },
+    {
+      "id": "tessar-jp2003005030a",
+      "family": "Tessar",
+      "zmx": "tessar-jp2003005030a.zmx",
+      "sha256": "013c30d5579fc42720a4aad5f5ddd9553051f1f75f5dc47cfa82c9eb92aeb05d",
+      "source": {
+        "title": "JP2003005030A, Tessar 型レンズ (Tessar type lens)",
+        "url": "https://patents.google.com/patent/JP2003005030A/ja",
+        "locator": "Japanese publication: Example 1, Table 1 for the prescription; [0017] defines the columns and [0026] lists the wavelengths",
+        "public_status": "Japanese grant JP4821058B2: Expired - Fee Related (Google Patents status)."
+      },
+      "reference": {
+        "basis": "Published Table 1 focal length and FNO at the d line",
+        "efl_mm": 100.0,
+        "paraxial_f_number": 2.9,
+        "efl_abs_tolerance_mm": 0.001,
+        "f_number_abs_tolerance": 0.005
+      },
+      "field_angles_y_deg": [0, 25.2],
+      "wavelengths_um": [0.4356, 0.4861, 0.5876, 0.6563],
+      "primary_wavelength_um": 0.5876,
+      "surface_count": 10,
+      "stop_surface": 3,
+      "glass": "ZMX model glass (___BLANK) with Table 1 nd and Vd, no catalog matching.",
+      "length_scale": 1,
+      "adaptations": "Object at infinity. Entrance pupil diameter = 100.000/2.90 mm, since Table 1 gives FNO but not a stop diameter. Use the listed surface 8 gap (82.5467 mm) for the image plane. Sample axis and the published 50.4 degree full field's edge."
+    },
+    {
+      "id": "petzval-comsol",
+      "family": "Field-flattened Petzval",
+      "zmx": "petzval-comsol.zmx",
+      "sha256": "6e55dadbc06ef0044b235fa7145f3331fcf41d9bdef98ba2f718084f5405f643",
+      "source": {
+        "title": "COMSOL 6.4 Petzval Lens tutorial, based on M. J. Kidger, Fundamental Optical Design (SPIE Press, 2001)",
+        "url": "https://doc.comsol.com/6.4/doc/com.comsol.help.models.roptics.petzval_lens/petzval_lens.html",
+        "locator": "Tables 1 and 2 of the publicly published COMSOL adaptation, not the original book prescription",
+        "public_status": "Public tutorial; prescription data only."
+      },
+      "reference": {
+        "basis": "Independent paraxial calculation from Table 1 and SCHOTT Sellmeier coefficients at 0.55 um; F-number uses Table 2's 41.5 mm nominal entrance pupil",
+        "efl_mm": 100.77933919,
+        "paraxial_f_number": 2.42841781,
+        "efl_abs_tolerance_mm": 0.001,
+        "f_number_abs_tolerance": 0.00001,
+        "published_nominal_efl_mm": 100.0,
+        "published_approximate_f_number": 2.4
+      },
+      "field_angles_y_deg": [0, 6, 9],
+      "wavelengths_um": [0.475, 0.55, 0.625],
+      "primary_wavelength_um": 0.55,
+      "surface_count": 11,
+      "stop_surface": 4,
+      "glass": "SCHOTT N-BK7, N-KZFS5, N-SK2 and N-SF5 named in Table 1; no further substitution.",
+      "length_scale": 1,
+      "adaptations": "Preserve Table 1 radii, gaps, stop position, and image plane. Select Table 2's central wavelength as primary. Use its nominal entrance pupil, not a pupil derived from the physical stop. Clear apertures, annuli, and field-dependent pupil shifts are not in the sequential model."
+    },
+    {
+      "id": "retrofocus-us7656591b2",
+      "family": "Retrofocus wide-angle",
+      "zmx": "retrofocus-us7656591b2.zmx",
+      "sha256": "29c24bd41281b414165362e709105b805fb477abc645781cb7bb6a728e13558c",
+      "source": {
+        "title": "US7656591B2, Retrofocus lens system and image-taking device",
+        "url": "https://patents.google.com/patent/US7656591B2/en",
+        "locator": "Example 1, Table 1 (infinity column); scanned PDF page 12, columns 7–8",
+        "public_status": "US grant US7656591B2: Expired - Fee Related (Google Patents status)."
+      },
+      "reference": {
+        "basis": "Published Table 1 focal length and FNO at infinity, with d-line primary",
+        "efl_mm": 41.2,
+        "paraxial_f_number": 2.89,
+        "efl_abs_tolerance_mm": 0.05,
+        "f_number_abs_tolerance": 0.005
+      },
+      "field_angles_y_deg": [0, 36],
+      "wavelengths_um": [0.4358, 0.5876],
+      "primary_wavelength_um": 0.5876,
+      "surface_count": 20,
+      "stop_surface": 12,
+      "glass": "ZMX model glass (___BLANK) with Table 1 nd and Vd, no catalog matching.",
+      "length_scale": 1,
+      "adaptations": "Use the infinity configuration only. Entrance pupil diameter = 41.2/2.89 mm, since the table does not give a stop diameter. Table 1 leaves Bf symbolic; set the image plane at the paraxial d-line back focal distance calculated from the tabulated radii, gaps and nd (56.49949990 mm). Sample axis and the published 72 degree full field's edge."
+    }
+  ]
+}
