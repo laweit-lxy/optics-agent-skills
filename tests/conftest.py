@@ -21,6 +21,37 @@ def sample_reference(name: str) -> Path:
     return DATA / name / f"{name}-native-reference.json"
 
 
+def unit_copy(source: Path, target: Path, unit: str, object_distance_mm: float | None = None,
+              height_field: bool = False) -> Path:
+    """Write a millimetre .zmx in another declared unit (MM, IN or INCH), rescaling its lengths.
+
+    Covers the records in the bundled samples: ENPD, CURV, DISZ and CLAP, plus XFLN/YFLN
+    when ``height_field`` turns the fields into object heights. ``object_distance_mm``
+    replaces the infinite object distance with a finite one.
+    """
+    mm = {"MM": 1.0, "IN": 25.4, "INCH": 25.4}[unit]
+    lines = []
+    for line in source.read_text(encoding="utf-8").splitlines():
+        indent = line[: len(line) - len(line.lstrip())]
+        key, *values = line.split() or [""]
+        if key == "UNIT":
+            values[0] = unit
+        elif key == "FTYP" and height_field:
+            values[0] = "1"
+        elif key == "DISZ" and values[0] == "INFINITY":
+            if object_distance_mm is not None:
+                values[0] = repr(object_distance_mm / mm)
+        elif key == "CURV":
+            values[0] = repr(float(values[0]) * mm)
+        elif key in {"ENPD", "DISZ", "CLAP"}:
+            values[0] = repr(float(values[0]) / mm)
+        elif key in {"XFLN", "YFLN"} and height_field:
+            values = [repr(float(v) / mm) for v in values]
+        lines.append(indent + " ".join([key, *values]) if key else line)
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return target
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 

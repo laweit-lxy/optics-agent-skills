@@ -11,7 +11,7 @@ import sys
 
 import pytest
 
-from conftest import REPO, SAMPLES, read_report, sample_reference, sample_zmx, sha256
+from conftest import REPO, SAMPLES, read_report, sample_reference, sample_zmx, sha256, unit_copy
 
 from optics_agent_skills import engines
 
@@ -33,7 +33,7 @@ pytestmark = pytest.mark.skipif(not _available(), reason="needs both engine envi
 EXPECTED = {
     "cooke": ("UNRESOLVED", {"material_catalog", "ray_aiming"}),
     "double-gauss": ("UNRESOLVED", {"ray_aiming"}),
-    "hubble": ("EXPLAINED", {"object_distance"}),
+    "hubble": ("AGREE", set()),
 }
 COOKE_EFL_HIKARI_MM = 50.00039433779174
 
@@ -69,6 +69,30 @@ def test_catalog_override_reproduces_rayoptics_efl(cooke_probes):
     assert cooke_probes["optiland"]["first_order"]["efl_mm"] == pytest.approx(49.999783071431914, rel=1e-12)
 
 
+@pytest.mark.parametrize("options", [{}, {"object_distance_mm": 1e10, "height_field": True}],
+                         ids=["infinite-angle", "finite-height"])
+def test_rayoptics_probe_reports_millimetres(options, out_dir):
+    probes = {}
+    for unit in ("MM", "IN", "INCH"):
+        zmx = unit_copy(sample_zmx("hubble"), out_dir / f"hubble-{unit}.zmx", unit, **options)
+        probes[unit] = engines.probe("crosscheck", zmx, out_dir / f"probe-{unit}.json")
+    base = probes["MM"]
+    assert base["first_order"]["efl_mm"] == pytest.approx(57600.080998403595, rel=1e-9)
+    if options:
+        assert base["surfaces"][0]["thickness_mm"] == pytest.approx(1e10, rel=1e-12)
+        assert base["fields"]["max"] == pytest.approx(0.15, rel=1e-12)
+    for unit in ("IN", "INCH"):
+        probe = probes[unit]
+        assert probe["first_order"] == pytest.approx(base["first_order"], rel=1e-9)
+        assert probe["fields"]["max"] == pytest.approx(base["fields"]["max"], rel=1e-9)
+        assert probe["fields"]["normalized"] == base["fields"]["normalized"]
+        for a, b in zip(base["surfaces"], probe["surfaces"], strict=True):
+            for key in ("radius_mm", "thickness_mm"):
+                assert b[key] == (None if a[key] is None else pytest.approx(a[key], rel=1e-9)), key
+        for a, b in zip(base["rays"], probe["rays"], strict=True):
+            assert (b["x_mm"], b["y_mm"]) == pytest.approx((a["x_mm"], a["y_mm"]), rel=1e-9, abs=1e-9)
+
+
 @pytest.mark.parametrize("name", SAMPLES)
 def test_diagnosis_matches_qualified_outcome(name, out_dir):
     zmx = sample_zmx(name)
@@ -77,7 +101,7 @@ def test_diagnosis_matches_qualified_outcome(name, out_dir):
                              "--output-dir", str(out_dir / name), "--reference-json", str(sample_reference(name))],
                             capture_output=True, text=True, encoding="utf-8", timeout=1800)
     status, confirmed = EXPECTED[name]
-    assert result.returncode == (0 if status == "EXPLAINED" else 1), result.stderr
+    assert result.returncode == (0 if status in {"AGREE", "EXPLAINED"} else 1), result.stderr
     assert json.loads(result.stdout.strip().splitlines()[-1])["status"] == status
     report = read_report(out_dir / name / "diagnosis.json")
     assert sha256(zmx) == before

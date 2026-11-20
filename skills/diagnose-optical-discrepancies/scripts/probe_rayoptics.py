@@ -34,6 +34,7 @@ def probe(path: Path) -> dict:
     with entry._rayoptics_runtime() as read_lens_file:
         model, _ = read_lens_file(path)
         sm, osp = model["sm"], model["osp"]
+        _, mm = entry._system_units(model)  # *_mm fields are converted from system units
         wavelengths_nm = [float(w) for w in osp["wvls"].wavelengths]
         primary_nm = float(osp["wvls"].central_wvl)
         surfaces = []
@@ -43,16 +44,18 @@ def probe(path: Path) -> dict:
             if gap is not None:
                 medium = gap.medium
                 n = [float(medium.rindex(w)) for w in wavelengths_nm]
-                thickness = _finite_or_none(float(gap.thi))
+                thickness = _finite_or_none(float(gap.thi) * mm)
                 if not all(abs(v - 1.0) < 1e-12 for v in n):
                     catalog = getattr(medium, "catalog_name", None)
                     material = {"name": medium.name(), "catalog": catalog() if callable(catalog) else None}
             else:
                 n = [1.0] * len(wavelengths_nm)
-            surfaces.append({"index": index, "radius_mm": _radius(float(ifc.profile.cv)),
+            surfaces.append({"index": index, "radius_mm": _radius(float(ifc.profile.cv) / mm),
                              "thickness_mm": thickness, "material": material, "n": n})
         fields = osp["fov"].fields
         max_field = float(osp["fov"].value)
+        # Height fields are lengths; angle fields stay in degrees.
+        field_scale = mm if "height" in str(osp["fov"].key[-1]) else 1.0
         rays = []
         for field_index, field in enumerate(fields):
             for pupil in PUPILS:
@@ -61,7 +64,7 @@ def probe(path: Path) -> dict:
                 point = pkg.ray[-1].p if error is None else (math.nan, math.nan)
                 rays.append({"field_index": field_index, "pupil": list(pupil),
                              "wavelength_um": primary_nm / 1000.0,
-                             "x_mm": float(point[0]), "y_mm": float(point[1]),
+                             "x_mm": float(point[0]) * mm, "y_mm": float(point[1]) * mm,
                              "error": None if error is None else type(error).__name__})
         first_order = model["analysis_results"]["parax_data"][2]
         return {
@@ -73,11 +76,11 @@ def probe(path: Path) -> dict:
             "primary_wavelength_um": primary_nm / 1000.0,
             "fields": {"normalized": [[f.x / max_field if max_field else 0.0,
                                        f.y / max_field if max_field else 0.0] for f in fields],
-                       "max": max_field},
+                       "max": max_field * field_scale},
             "stop_index": int(sm.stop_surface),
             "surfaces": surfaces,
             # RayOptics fno is the working f/# from the paraxial marginal ray slope.
-            "first_order": {"efl_mm": float(first_order.efl), "fno_working": float(first_order.fno)},
+            "first_order": {"efl_mm": float(first_order.efl) * mm, "fno_working": float(first_order.fno)},
             "rays": rays,
         }
 

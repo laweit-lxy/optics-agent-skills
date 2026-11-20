@@ -30,11 +30,11 @@ The output directory holds `diagnosis.json` and one `probe-*.json` per engine ru
 
 ## How it works
 
-1. Probe both engines (schema `optics-probe/1`). Each probe records the surfaces it built (radius, thickness, material name and catalog, index at every wavelength), the stop, the wavelengths, the fields, the EFL, the working F-number from the paraxial marginal ray, and the image intercepts of the chief ray and three pupil-edge rays per field at the primary wavelength.
+1. Probe both engines (schema `optics-probe/1`). Each probe records the surfaces it built (radius, thickness, material name and catalog, index at every wavelength), the stop, the wavelengths, the fields, the EFL, the working F-number from the paraxial marginal ray, and the image intercepts of the chief ray and three pupil-edge rays per field at the primary wavelength. The RayOptics probe converts lengths and height fields from the file's unit to mm.
 2. Check that both reports are complete, then compare the inputs, the first-order values and the rays. The tolerances are in `diagnosis.json` under `tolerances`. If the engines built a different number of surfaces, different wavelengths or primary wavelength, or different fields, the outputs do not describe the same rays: no experiment runs and the status is `UNRESOLVED` with a `not_comparable` item.
 3. Run experiments on Optiland only, holding RayOptics fixed. Each runs only while the difference it targets remains. A setting that removes a difference is kept for the next experiment; one that removes nothing is reverted:
    - `material_catalog_swap`: give Optiland the glass catalogs RayOptics resolved.
-   - `object_distance`: place the object at RayOptics' finite distance. RayOptics stores an infinite object as 1e10 mm, which shifts the image by about f²/z. Skipped when the estimated edge-ray shift and working-F-number change are below tolerance.
+   - `object_distance`: place the object at RayOptics' finite distance. The pinned RayOptics replaces an infinite object with a finite distance chosen for about 1 nm of image shift (f²/z), clamped to 1e10–1e20 in the file's length unit: 1e10 mm for Cooke, about 3.3e15 mm for Hubble. Skipped when the estimated edge-ray shift and working-F-number change are below tolerance.
    - `ray_aiming`: switch Optiland to iterative aiming at the real stop.
 4. Credit each difference to the first experiment after which it disappears. A ray an experiment cannot trace is listed under `untraced_rays` and never credited (at a 1e10 mm object, Optiland returns NaN for some Cooke fields and for every Double-Gauss field, the axis included). A ray that had a difference keeps it; a ray that agreed before becomes an `untraced_ray` item if the experiment is kept. A ray missing from one report counts as untraced. Whatever remains after the last experiment is unresolved.
 
@@ -61,7 +61,7 @@ State the status and each confirmed cause with its size (for example, the EFL be
 | --- | --- | --- | --- |
 | Cooke triplet | `UNRESOLVED` | `material_catalog`: the ZMX declares `GCAT HIKARI SCHOTT`. RayOptics and OpticStudio take F2 from Hikari, Optiland from Schott; the swap moves the Optiland EFL from 49.999783 mm to 50.000394 mm, the RayOptics and OpticStudio value, and removes the F-number difference. `ray_aiming`: iterative aiming removes the chief-ray differences at 14° and 20°. | Six pupil-edge rays at 14° and 20°, up to 0.025 mm. |
 | Double-Gauss | `UNRESOLVED` | `ray_aiming`: chief rays at 10° and 14°. Four glasses resolve to different catalogs; the swap removed nothing and was reverted. | Six pupil-edge rays at 10° and 14°, up to 0.0016 mm. |
-| Hubble | `EXPLAINED` | `object_distance`: RayOptics puts the object at 1e10 mm, Optiland at infinity. With the same distance, the working F-number difference (4.8e-5 relative) and all six 6.9 µm edge-ray differences disappear; f²/z = 0.33 mm of defocus at F/24 predicts 6.9 µm. | None. |
+| Hubble | `AGREE` | None. RayOptics puts the object at about 3.3e15 mm, Optiland at infinity; this remains an input difference, and `object_distance` is skipped because its estimated effect is 2.1e-8 mm on edge rays and 1.7e-11 relative on the working F-number. Both engines match the reference EFL. | None. |
 
 These rows document the qualified runs. Verify them against a fresh `diagnosis.json` before quoting them for another runtime.
 

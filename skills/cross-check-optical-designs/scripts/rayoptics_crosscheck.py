@@ -21,13 +21,17 @@ import tempfile
 from typing import Any, Iterator
 
 
-PINNED_SHA = "e25bc579116d31ed97fa1632f871e2801e8e956e"
+PINNED_SHA = "5009d933ae525defcd799344ad94f80cc6177892"
 # The RayOptics package is located in the running interpreter's environment
-# (install it from requirements/cross-check-optical-designs.txt). An optional
+# (install it from this skill's requirements.txt). An optional
 # refractiveindex.info database snapshot is read from this environment variable.
 RII_DB_ENV = "OPTICS_SKILLS_RII_DB"
-EXPECTED_PACKAGE_MANIFEST_SHA256 = "76b2b57d9b5db8b91fd34f1e5ef971cc7c57752e1b1e3d858ce0302d3c106924"
+EXPECTED_PACKAGE_MANIFEST_SHA256 = "73a22ea794d88134582424b78f1112c7989ab973e90ec8c34affb415204d1111"
 EXPECTED_PACKAGE_FILE_COUNT = 192
+# RayOptics keeps lengths in the file's system units (SystemSpec.dimensions);
+# every *_mm output field is converted at the report boundary.
+MM_PER_SYSTEM_UNIT = {"mm": 1.0, "cm": 10.0, "m": 1000.0, "in": 25.4, "ft": 304.8}
+FIRST_ORDER_LENGTHS = {"efl", "bfl", "ffl", "img_dist", "img_ht"}
 EXPECTED_RII_FILE_COUNT = 4174
 EXPECTED_RII_CATALOG_NK_SHA256 = (
     "3a4a18908b03b99e258f4f329d8fc56e7d79757902a5153a212508a19a146cf1"
@@ -302,13 +306,22 @@ def _rayoptics_runtime() -> Iterator[Any]:
                 os.environ["MPLCONFIGDIR"] = old_config
 
 
+def _system_units(model: Any) -> tuple[str, float]:
+    """Return the model's length unit and its size in mm."""
+    units = str(model.system_spec.dimensions).casefold()
+    if units not in MM_PER_SYSTEM_UNIT:
+        raise CrossCheckError(f"unsupported RayOptics system units: {units}")
+    return units, MM_PER_SYSTEM_UNIT[units]
+
+
 def _model_summary_base(model: Any, import_info: Any) -> dict[str, Any]:
     sequential = model["seq_model"]
     optical_spec = model["optical_spec"]
     first_order = model["analysis_results"]["parax_data"][2]
+    units, mm = _system_units(model)
     interfaces: list[dict[str, Any]] = []
     for index, interface in enumerate(sequential.ifcs):
-        curvature = float(getattr(interface.profile, "cv", 0.0))
+        curvature = float(getattr(interface.profile, "cv", 0.0)) / mm
         radius: float | str = "Infinity" if curvature == 0 else 1.0 / curvature
         gap = sequential.gaps[index] if index < len(sequential.gaps) else None
         medium = gap.medium if gap is not None else None
@@ -319,7 +332,7 @@ def _model_summary_base(model: Any, import_info: Any) -> dict[str, Any]:
                 "interaction": str(getattr(interface, "interact_mode", "")),
                 "curvature_per_mm": curvature,
                 "radius_mm": radius,
-                "thickness_after_mm": float(gap.thi) if gap is not None else None,
+                "thickness_after_mm": float(gap.thi) * mm if gap is not None else None,
                 "medium_after": {
                     "name": _call_or_value(medium, "name"),
                     "catalog": _call_or_value(medium, "catalog_name"),
@@ -330,11 +343,14 @@ def _model_summary_base(model: Any, import_info: Any) -> dict[str, Any]:
         )
 
     field_spec = optical_spec.field_of_view
+    # Height fields are lengths (converted to mm); angle fields stay in degrees.
+    height_field = "height" in str(field_spec.key[-1])
+    field_scale = mm if height_field else 1.0
     fields = [
         {
             "index": index + 1,
-            "x": float(field.x),
-            "y": float(field.y),
+            "x": float(field.x) * field_scale,
+            "y": float(field.y) * field_scale,
             "weight": float(field.wt),
         }
         for index, field in enumerate(field_spec.fields)
@@ -358,14 +374,17 @@ def _model_summary_base(model: Any, import_info: Any) -> dict[str, Any]:
         },
         "optical_spec": {
             "field_key": list(field_spec.key),
-            "maximum_field": float(field_spec.value),
+            "field_units": "mm" if height_field else "deg",
+            "maximum_field": float(field_spec.value) * field_scale,
             "fields": fields,
             "wavelengths": wavelengths,
         },
         "first_order": {
-            name: float(getattr(first_order, name))
+            name: float(getattr(first_order, name)) * (mm if name in FIRST_ORDER_LENGTHS else 1.0)
             for name in ("efl", "fno", "bfl", "ffl", "m", "img_dist", "img_ht")
         },
+        "system_units": units,
+        # Kept as RayOptics returned it; its lengths (e.g. 'inf object') are in system_units.
         "import_info": _json_safe(import_info),
     }
 
@@ -590,7 +609,7 @@ def main() -> int:
         checks["reference_wavelength_match"] = reference_wavelength is None or math.isclose(
             reference_wavelength, summary["metric_definitions"]["wavelength_nm"], rel_tol=0.0, abs_tol=1e-8)
         if "paraxial_f_number" in reference_metrics:
-            checks["ISFN_infinite_conjugate_scope"] = abs(model["sm"].gaps[0].thi) >= 1e9
+            checks["ISFN_infinite_conjugate_scope"] = abs(model["sm"].gaps[0].thi) * _system_units(model)[1] >= 1e9
         checks["reference_first_order_match"] = comparison["passed"]
 
     required_failures = [name for name, passed in checks.items() if not passed]
