@@ -81,6 +81,11 @@ def test_rayoptics_probe_reports_millimetres(options, out_dir):
     if options:
         assert base["surfaces"][0]["thickness_mm"] == pytest.approx(1e10, rel=1e-12)
         assert base["fields"]["max"] == pytest.approx(0.15, rel=1e-12)
+    # The ~3.3e15 mm infinity stand-in loses precision when the tracer
+    # subtracts large object-space coordinates. Both x86-64 CI platforms
+    # observed a 2.48e-9 mm difference in the off-axis +x ray. Allow a
+    # 1e-8 mm absolute floor there, still 10,000x below the diagnosis gate.
+    ray_atol_mm = 1e-9 if options else 1e-8
     for unit in ("IN", "INCH"):
         probe = probes[unit]
         assert probe["first_order"] == pytest.approx(base["first_order"], rel=1e-9)
@@ -90,7 +95,7 @@ def test_rayoptics_probe_reports_millimetres(options, out_dir):
             for key in ("radius_mm", "thickness_mm"):
                 assert b[key] == (None if a[key] is None else pytest.approx(a[key], rel=1e-9)), key
         for a, b in zip(base["rays"], probe["rays"], strict=True):
-            assert (b["x_mm"], b["y_mm"]) == pytest.approx((a["x_mm"], a["y_mm"]), rel=1e-9, abs=1e-9)
+            assert (b["x_mm"], b["y_mm"]) == pytest.approx((a["x_mm"], a["y_mm"]), rel=1e-9, abs=ray_atol_mm)
 
 
 @pytest.mark.parametrize("name", SAMPLES)
