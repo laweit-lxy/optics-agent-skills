@@ -15,6 +15,10 @@ Agent skills for optical design that you can check. An AI coding agent (Claude C
 | [`build-optomechanical-parts`](skills/build-optomechanical-parts/SKILL.md) | [CadQuery](https://github.com/CadQuery/cadquery) 2.8.0 | Builds nominal aperture mounts, baffled tubes and rigid assemblies from dimensions in a JSON file. Exports STEP and STL and checks analytic volume, bounds, the STEP roundtrip and the pose of each placed part. No tolerances, threads or collision checks. |
 | [`process-radiometric-calibration`](skills/process-radiometric-calibration/SKILL.md) | [NumPy](https://numpy.org/) 2.5.4 | Convolves spectral radiance with one band response, computes top-of-atmosphere reflectance and compares GUM and Monte Carlo uncertainty. Use already-calibrated spectra; no DN conversion or atmospheric correction. |
 
+## Classic lens starting points
+
+The [starting-point catalog](lens-starting-points/README.md) includes five centered sequential forms: Cooke triplet, Double-Gauss, Tessar, field-flattened Petzval and retrofocus wide-angle. Each entry records its source and first-order reference values. Both Optiland and RayOptics check the imported focal length and paraxial F-number; the checks do not qualify field illumination or manufacturability. Copy a prescription before adapting it.
+
 ## Why cross-check, and why diagnose
 
 Every lens-design program imports a `.zmx` file a little differently. The three engines below evaluate the same prescriptions. The diagnosis changes one setting at a time in Optiland while holding RayOptics fixed. Differences the experiments do not remove stay unresolved:
@@ -101,8 +105,10 @@ Install `pytest` into each environment used below. Each test file runs in the en
 
 ```bash
 .venv-design-optical-systems/bin/pip install pytest
-.venv-design-optical-systems/bin/python -m pytest tests/test_design_optical_systems.py tests/test_diagnosis_core.py tests/test_diagnose_optical_discrepancies.py
-.venv-cross-check-optical-designs/bin/python -m pytest tests/test_cross_check_optical_designs.py
+.venv-design-optical-systems/bin/python -m pytest tests/test_design_optical_systems.py tests/test_diagnosis_core.py tests/test_diagnose_optical_discrepancies.py tests/test_lens_starting_points.py::test_catalog tests/test_lens_starting_points.py::test_optiland
+.venv-cross-check-optical-designs/bin/pip install pytest
+.venv-cross-check-optical-designs/bin/python -m pytest tests/test_cross_check_optical_designs.py tests/test_lens_starting_points.py::test_rayoptics
+.venv-analyze-optical-designs/bin/pip install pytest
 .venv-analyze-optical-designs/bin/python -m pytest tests/test_analyze_optical_designs.py
 .venv-calibrate-spectral-wavelength/bin/pip install pytest
 .venv-calibrate-spectral-wavelength/bin/python -m pytest tests/test_calibrate_spectral_wavelength.py
@@ -117,7 +123,7 @@ Install `pytest` into each environment used below. Each test file runs in the en
 
 Every remote action (pushing a branch or tag, opening a pull request, creating a GitHub release) needs the maintainer's explicit go-ahead each time. Steps 1, 2 and 4 are local and reversible; step 3 needs a CI run on GitHub, and step 5 publishes.
 
-1. Version: set the same number in `pyproject.toml`, `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json`.
+1. Version: set the same number in `pyproject.toml`, `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json` and `src/optics_agent_skills/__init__.py` (the version reported by the MCP server).
 2. Docs: update the `ROADMAP.md` row for the release (mark it released, list what shipped) and any README section the change touches.
 3. Tests: run the commands above locally. The `regression` workflow (`.github/workflows/ci.yml`) runs only on a push to `main`, a pull request, its weekly schedule or a manual dispatch, so a local commit has no CI result. With the go-ahead, push the release commit to a branch and open a pull request against `main`, then confirm the workflow is green on Linux and Windows for that commit.
 4. Local sync: update the installed copies of the skills on the maintainer's machine from this repository and rerun one skill self-check there, so the installed version matches the release commit that step 5 tags.
@@ -128,7 +134,7 @@ Every remote action (pushing a branch or tag, opening a pull request, creating a
 
 - [ai-zemax-optical-design](https://github.com/Jerry-del975/ai-zemax-optical-design): design loops in Ansys Zemax OpticStudio through ZOS-API. Its reports can serve as cross-check references.
 
-See [ROADMAP.md](ROADMAP.md) for planned work: a starting-point library, a requirements-to-lens design loop and a lens-design benchmark for agents.
+See [ROADMAP.md](ROADMAP.md) for planned work: a requirements-to-lens design loop and a lens-design benchmark for agents.
 
 ## License
 
