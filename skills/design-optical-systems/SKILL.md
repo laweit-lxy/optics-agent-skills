@@ -1,6 +1,6 @@
 ---
 name: design-optical-systems
-description: Analyze a local sequential lens prescription (absolute-path .zmx) or the built-in Cooke/Double-Gauss/Hubble samples with the pinned Optiland 0.6.3 runtime, reporting EFL/F-number, spot, OPD, scalar FFT PSF/MTF and a three-point radius sensitivity, read-only. Use when an agent needs reproducible geometric/wavefront metrics or Optiland runtime qualification. Not for wave-optics propagation or inverse design (analyze-optical-designs), independent cross-software checks (cross-check-optical-designs), or editing/optimizing in OpticStudio (ai-zemax-optical-design).
+description: Analyze a local sequential lens prescription (absolute-path .zmx) or the built-in Cooke/Double-Gauss/Hubble samples with the pinned Optiland 0.6.3 runtime, reporting EFL/F-number, spot, OPD and scalar FFT PSF/MTF, read-only. Use when an agent needs reproducible geometric/wavefront metrics or Optiland runtime qualification. Not for wave-optics propagation or inverse design (analyze-optical-designs), independent cross-software checks (cross-check-optical-designs), or editing/optimizing in OpticStudio (ai-zemax-optical-design).
 ---
 
 # Design Optical Systems
@@ -40,7 +40,7 @@ The self-test uses Optiland's synthetic/reference Cooke triplet, Double-Gauss, a
 
 - Prescription distances and radii are millimetres; wavelengths are micrometres; spatial frequency is cycles/mm; OPD RMS is waves at the stated wavelength.
 - Spot metrics are geometric ray metrics. FFT PSF/MTF are scalar calculations in the pinned NumPy backend; every report records requested and actual pupil sampling, FFT grid, strategy, and tilt handling.
-- Sensitivity uses a deterministic three-point radius sweep and verifies that the nominal prescription is restored. It is not a manufacturing Monte Carlo or a tolerance yield claim.
+- The built-in Cooke qualification uses a three-point radius sweep and verifies that the nominal radius is restored. `--input-zmx` does not sweep the supplied prescription. The qualification is not a manufacturing Monte Carlo or a tolerance yield claim.
 - JSON equality and ZMX import/export are self-round-trips. They do not demonstrate semantic equivalence in Ansys Zemax OpticStudio.
 - The pinned writer preserves binary64 numeric precision and emits Nd/Vd so the reader can disambiguate duplicate glass names inside declared `GCAT` catalogs. The regression requires Cooke catalog identity, actual n(λ) at all system wavelengths, and EFL to survive the self-round-trip. This does not guarantee every third-party importer will select the same catalog.
 - Independent Hubble values must never be regenerated from Optiland. If they fail, investigate the implementation, definition/convention, or external reference before changing a constant or tolerance.

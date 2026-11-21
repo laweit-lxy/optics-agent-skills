@@ -52,6 +52,41 @@ def test_identical_probes_agree():
     assert diagnosis.conclude(baseline, [])["status"] == "AGREE"
 
 
+def test_surface_comparison_reports_both_imports_and_signed_deltas():
+    a, b = make_probe("optiland"), make_probe("rayoptics")
+    b["surfaces"][0]["thickness_mm"] = 1e10
+    b["surfaces"][1].update(radius_mm=-20.0, thickness_mm=4.0,
+                            material={"name": "N-BK7", "catalog": "hikari"}, n=[1.521, 1.5168, 1.5144])
+    table = diagnosis.surface_comparison(a, b)
+    assert table["aligned_by_index"] and table["delta_order"] == ["optiland", "rayoptics"]
+    assert table["wavelengths_um"] == {"optiland": a["wavelengths_um"], "rayoptics": b["wavelengths_um"]}
+    assert len(table["rows"]) == 4
+    obj, glass, flat, image = table["rows"]
+    assert obj["optiland"]["thickness_after_mm"] is None and obj["rayoptics"]["thickness_after_mm"] == 1e10
+    assert obj["delta"]["thickness_after_mm"] is None
+    assert glass["surface"] == 1 and glass["glass_matches"] is False
+    assert glass["optiland"]["glass_after"] == a["surfaces"][1]["material"]
+    assert glass["rayoptics"]["glass_after"] == b["surfaces"][1]["material"]
+    assert glass["delta"]["curvature_per_mm"] == pytest.approx(1 / 22 + 1 / 20)
+    assert glass["delta"]["thickness_after_mm"] == -1.0
+    assert glass["delta"]["refractive_indices_after"] == pytest.approx([0.001, 0, -0.0001])
+    assert flat["optiland"]["curvature_per_mm"] == flat["delta"]["curvature_per_mm"] == 0.0
+    assert flat["glass_matches"] and image["delta"]["thickness_after_mm"] is None
+
+
+def test_surface_comparison_does_not_invent_alignment():
+    a, b = make_probe("optiland"), make_probe("rayoptics")
+    b["wavelengths_um"][0] = 0.5000
+    row = diagnosis.surface_comparison(a, b)["rows"][1]
+    assert row["delta"]["refractive_indices_after"] is None
+    assert row["delta"]["curvature_per_mm"] == 0.0
+    b["surfaces"].pop()
+    table = diagnosis.surface_comparison(a, b)
+    assert not table["aligned_by_index"]
+    assert all(row["delta"] is None for row in table["rows"])
+    assert table["rows"][-1]["rayoptics"] is None
+
+
 def test_infinite_object_conventions_and_image_thickness_are_not_importer_findings():
     a, b = make_probe("optiland"), make_probe("rayoptics")
     b["surfaces"][0]["thickness_mm"] = 1e10
@@ -271,10 +306,12 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def test_diagnosis_refuses_to_write_over_a_hard_link_of_its_input(stub_source, tmp_path):
+@pytest.mark.parametrize("output_name", ["diagnosis.json", "probe-optiland-vignetting.json",
+                                         "probe-optiland-pupil-coordinates.json"])
+def test_diagnosis_refuses_to_write_over_a_hard_link_of_its_input(stub_source, tmp_path, output_name):
     out = tmp_path / "out"
     out.mkdir()
-    os.link(stub_source, out / "diagnosis.json")
+    os.link(stub_source, out / output_name)
     before = digest(stub_source)
     with pytest.raises(ValueError, match="same file"):
         engines.diagnose(stub_source, out, force=True)

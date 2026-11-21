@@ -23,7 +23,7 @@ Use a dedicated Python 3.12 environment installed from this skill's `requirement
 ## Safety And Reproducibility
 
 - Do not control cameras, SLMs, stages, lasers, or other instruments from this skill.
-- Do not overwrite prescriptions, measured data, calibration files, or prior results.
+- Use a new path for `optics_regression.py --output`: the script creates missing parent directories and overwrites an existing file at that path without a prompt. Omit `--output` to read the JSON on stdout.
 - Never invent material constants, coating data, tolerances, or detector parameters.
 - Use SI units internally unless a library API explicitly requires another unit; label every conversion.
 - Fix random seeds for stochastic optimization and save the seed with results.

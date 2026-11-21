@@ -25,12 +25,16 @@ CATEGORIES = {
     "object_distance": "One engine places the object at infinity, the other at a large finite distance; "
                        "the image shifts by about f^2/z and the working f/# changes with the conjugate.",
     "paraxial_convention": "Inputs agree but first-order quantities differ.",
-    "ray_aiming": "Real rays differ off axis; pupil or ray-aiming conventions differ.",
+    "ray_aiming": "Optiland's real-stop aiming removes the difference seen with paraxial aiming.",
+    "vignetting": "The field vignetting maps select different effective pupil coordinates.",
+    "pupil_coordinates": "The same normalized pupil coordinates select different points on the real stop. "
+                         "Matching the measured stop intercept removes the image-intercept difference.",
 }
 # Experiment name -> category it tests. engines.diagnose runs them in this order,
 # each on top of the previous one.
 EXPERIMENTS = {"material_catalog_swap": "material_catalog", "object_distance": "object_distance",
-               "ray_aiming": "ray_aiming"}
+               "ray_aiming": "ray_aiming", "vignetting": "vignetting",
+               "pupil_coordinates": "pupil_coordinates"}
 
 
 # Importer findings that make the output comparison meaningless: no experiment
@@ -151,6 +155,42 @@ def compare_inputs(a: dict, b: dict) -> list[dict[str, Any]]:
                              "wavelengths_um": a["wavelengths_um"]},
             })
     return findings
+
+
+def surface_comparison(a: dict, b: dict) -> dict[str, Any]:
+    """Audit even agreeing geometry and glass, using the engines' imported values."""
+    wa, wb = a["wavelengths_um"], b["wavelengths_um"]
+    same_wavelengths = [round(w, 9) for w in wa] == [round(w, 9) for w in wb]
+    sa, sb = ({s["index"]: s for s in p["surfaces"]} for p in (a, b))
+    aligned = sa.keys() == sb.keys()
+
+    def values(s: dict | None) -> dict | None:
+        if s is None:
+            return None
+        radius = s["radius_mm"]
+        numeric = _number(radius)
+        curvature = (0.0 if radius is None else 1.0 / numeric if math.isfinite(numeric) and numeric else None)
+        return {"curvature_per_mm": curvature, "thickness_after_mm": s["thickness_mm"],
+                "glass_after": s["material"], "refractive_indices_after": s["n"]}
+
+    def delta(x: Any, y: Any) -> float | None:
+        p, q = _number(x), _number(y)
+        return p - q if math.isfinite(p) and math.isfinite(q) else None
+
+    rows = []
+    for index in sorted(sa.keys() | sb.keys()):
+        left, right = values(sa.get(index)), values(sb.get(index))
+        differences, same_glass = None, None
+        if aligned and left is not None and right is not None:
+            differences = {key: delta(left[key], right[key]) for key in ("curvature_per_mm", "thickness_after_mm")}
+            differences["refractive_indices_after"] = (
+                [delta(x, y) for x, y in zip(left["refractive_indices_after"], right["refractive_indices_after"])]
+                if same_wavelengths else None)
+            same_glass = _material_key(left["glass_after"]) == _material_key(right["glass_after"])
+        rows.append({"surface": index, a["engine"]: left, b["engine"]: right,
+                     "delta": differences, "glass_matches": same_glass})
+    return {"aligned_by_index": aligned, "wavelengths_um": {a["engine"]: wa, b["engine"]: wb},
+            "delta_order": [a["engine"], b["engine"]], "rows": rows}
 
 
 def compare_first_order(a: dict, b: dict) -> list[dict[str, Any]]:
@@ -318,8 +358,8 @@ def conclude(baseline: dict, experiments: list[dict]) -> dict[str, Any]:
                            "findings": first_order})
     if rays:
         unresolved.append({"category": "real_ray", "explanation":
-                           "Real-ray intercepts still differ after the experiments; pupil coordinate "
-                           "definitions or vignetting conventions remain candidates.",
+                           "Real-ray intercepts still differ after the applicable experiments; inspect the "
+                           "probe traces, pupil mappings and surface comparison for the remaining rays.",
                            "findings": rays})
     if untraced:
         unresolved.append({"category": "untraced_ray", "explanation":
