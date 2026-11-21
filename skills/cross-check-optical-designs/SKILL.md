@@ -64,7 +64,7 @@ The defaults are relative 1e-4 and absolute 1e-8. They are the qualified thresho
 | --- | --- |
 | `status` | `PASS`, `INSPECTED`, `MISMATCH` or `FAIL`; read with the exit code. |
 | `checks`, `failed_checks` | Integrity, source-hash, load and finite-metric gates, and the names of any that failed. |
-| `model.system_units` | The file's length unit. Lengths, curvatures, first-order lengths and height fields in `model` are converted to mm (`optical_spec.field_units` says `mm` or `deg`); `model.import_info` is kept as RayOptics returned it, in system units. |
+| `model.system_units` | The file's length unit. The report uses mm for lengths and height fields and 1/mm for curvatures (`optical_spec.field_units` says `mm` or `deg`); `model.import_info` keeps RayOptics' original units. |
 | `model.catalog_resolution` | Per-surface glass name, declared GCAT catalog and resolved catalog. |
 | `model.metric_definitions` | How each compared quantity is defined. |
 | `model.working_f_number_analysis` | Real-ray working F-number result, or why it is unavailable. |

@@ -6,6 +6,7 @@ cross-check-optical-designs), found as in optics_agent_skills.engines.
 from __future__ import annotations
 
 import json
+import math
 import subprocess
 import sys
 
@@ -31,8 +32,8 @@ pytestmark = pytest.mark.skipif(not _available(), reason="needs both engine envi
 
 # Qualified outcomes: (status, experiment-confirmed causes).
 EXPECTED = {
-    "cooke": ("UNRESOLVED", {"material_catalog", "ray_aiming"}),
-    "double-gauss": ("UNRESOLVED", {"ray_aiming"}),
+    "cooke": ("EXPLAINED", {"material_catalog", "ray_aiming", "pupil_coordinates"}),
+    "double-gauss": ("EXPLAINED", {"ray_aiming", "pupil_coordinates"}),
     "hubble": ("AGREE", set()),
 }
 COOKE_EFL_HIKARI_MM = 50.00039433779174
@@ -113,13 +114,73 @@ def test_diagnosis_matches_qualified_outcome(name, out_dir):
     assert report["schema"] == "optics-diagnosis/1" and report["status"] == status
     assert {c["category"] for c in report["causes"]} == confirmed
     assert all(c["confirmed_by"] for c in report["causes"])
+    assert report["unresolved"] == []
+    table = report["surface_comparison"]
+    assert table["aligned_by_index"] and table["delta_order"] == ["optiland", "rayoptics"]
+    assert len(table["rows"]) == {"cooke": 8, "double-gauss": 13, "hubble": 5}[name]
     if name == "cooke":
+        glass = table["rows"][3]
+        assert glass["optiland"]["glass_after"]["catalog"].casefold() == "schott"
+        assert glass["rayoptics"]["glass_after"]["catalog"].casefold() == "hikari"
+        assert glass["glass_matches"] is False
+        assert abs(glass["delta"]["refractive_indices_after"][1]) == pytest.approx(4.6e-6, rel=0.12)
         swap = next(e for e in report["experiments"] if e["name"] == "material_catalog_swap")
         assert swap["kept"] and swap["efl_mm_after"] == pytest.approx(COOKE_EFL_HIKARI_MM, rel=1e-12)
         assert report["reference"]["rayoptics"]["agrees"] and not report["reference"]["optiland"]["agrees"]
     if name == "hubble":
-        assert report["unresolved"] == []
         assert report["reference"]["optiland"]["agrees"] and report["reference"]["rayoptics"]["agrees"]
+        return
+    steps = {e["name"]: e for e in report["experiments"]}
+    assert steps["vignetting"]["status"] == "RAN" and not steps["vignetting"]["kept"]
+    assert steps["pupil_coordinates"]["kept"] and steps["pupil_coordinates"]["removed"] == 6
+    assert steps["pupil_coordinates"]["result"]["rays"] == []
+    reports = [read_report(out_dir / name / f"probe-{stage}.json") for stage in (
+        "rayoptics", "optiland-ray-aiming", "optiland-vignetting", "optiland-pupil-coordinates")]
+    max_before, max_after, count = 0.0, 0.0, 0
+    for ref, aimed, vig, matched in zip(*(p["rays"] for p in reports), strict=True):
+        if matched["target_stop_xy_mm"] is None:
+            continue
+        count += 1
+        assert aimed["effective_pupil"] == vig["effective_pupil"] == matched["effective_pupil"] == ref["effective_pupil"]
+        assert _xy(aimed) == pytest.approx(_xy(vig), abs=1e-12, rel=0)
+        assert matched["target_stop_xy_mm"] == ref["stop_xy_mm"]
+        assert math.dist(matched["stop_xy_mm"], ref["stop_xy_mm"]) <= 1e-6
+        max_before = max(max_before, math.dist(_xy(aimed), _xy(ref)))
+        max_after = max(max_after, math.dist(_xy(matched), _xy(ref)))
+    assert count == 6
+    assert max_before == pytest.approx({"cooke": 0.024685, "double-gauss": 0.001588}[name], rel=1e-3)
+    assert max_after < 1e-5  # comfortably inside the 1e-4 mm diagnosis gate
+
+
+def _xy(ray):
+    return ray["x_mm"], ray["y_mm"]
+
+
+def test_asymmetric_vignetting_replaces_only_the_effective_pupil(out_dir):
+    zmx = out_dir / "asymmetric-vignetting.zmx"
+    lines = sample_zmx("cooke").read_text(encoding="utf-8").splitlines()
+    replacements = {"VCYN": "VCYN 0 0 0.15", "VDYN": "VDYN 0 0 0.07"}
+    zmx.write_text("\n".join(replacements.get(line.split()[0], line) if line.split() else line
+                             for line in lines) + "\n", encoding="utf-8")
+    before = sha256(zmx)
+    folder = out_dir / "diagnosis"
+    report = engines.diagnose(zmx, folder)
+    assert sha256(zmx) == before
+    steps = {e["name"]: e for e in report["experiments"]}
+    assert steps["vignetting"]["status"] == "RAN"
+    assert steps["vignetting"]["settings"]["ray_aiming"] == "iterative"
+    baseline = read_report(folder / "probe-optiland-ray-aiming.json")
+    trial = read_report(folder / "probe-optiland-vignetting.json")
+    assert baseline["first_order"] == trial["first_order"]
+    probed = [r for r in baseline["rays"] if r["field_index"] == 2 and abs(r["pupil"][1]) == 1]
+    changed = [r for r in trial["rays"] if r["field_index"] == 2 and abs(r["pupil"][1]) == 1]
+    assert len(probed) == len(changed) == 2
+    for native, aligned in zip(probed, changed, strict=True):
+        sign = native["pupil"][1]
+        assert native["effective_pupil"] == pytest.approx([0.0, sign * 0.85])
+        assert aligned["effective_pupil"] == pytest.approx([0.0, sign * 0.85 + 0.07])
+        assert math.dist(native["stop_xy_mm"], aligned["stop_xy_mm"]) > 0.1
+        assert aligned["target_stop_xy_mm"] is None
 
 
 def test_refuses_non_empty_output_directory(out_dir):

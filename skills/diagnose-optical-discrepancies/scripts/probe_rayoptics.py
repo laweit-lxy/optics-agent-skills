@@ -54,6 +54,9 @@ def probe(path: Path) -> dict:
                              "thickness_mm": thickness, "material": material, "n": n})
         fields = osp["fov"].fields
         max_field = float(osp["fov"].value)
+        stop_index = int(sm.stop_surface)
+        centered = (not osp["fov"].is_wide_angle
+                    and all(getattr(ifc, "decenter", None) is None for ifc in sm.ifcs))
         # Height fields are lengths; angle fields stay in degrees.
         field_scale = mm if "height" in str(osp["fov"].key[-1]) else 1.0
         rays = []
@@ -62,7 +65,10 @@ def probe(path: Path) -> dict:
                 pkg, error = trace.trace_ray(model, list(pupil), field, primary_nm,
                                              check_apertures=False, apply_vignetting=True)
                 point = pkg.ray[-1].p if error is None else (math.nan, math.nan)
+                stop_point = pkg.ray[stop_index].p if centered and error is None else None
                 rays.append({"field_index": field_index, "pupil": list(pupil),
+                             "effective_pupil": list(map(float, field.apply_vignetting(list(pupil)))),
+                             "stop_xy_mm": [float(v) * mm for v in stop_point[:2]] if stop_point is not None else None,
                              "wavelength_um": primary_nm / 1000.0,
                              "x_mm": float(point[0]) * mm, "y_mm": float(point[1]) * mm,
                              "error": None if error is None else type(error).__name__})
@@ -77,7 +83,7 @@ def probe(path: Path) -> dict:
             "fields": {"normalized": [[f.x / max_field if max_field else 0.0,
                                        f.y / max_field if max_field else 0.0] for f in fields],
                        "max": max_field * field_scale},
-            "stop_index": int(sm.stop_surface),
+            "stop_index": stop_index,
             "surfaces": surfaces,
             # RayOptics fno is the working f/# from the paraxial marginal ray slope.
             "first_order": {"efl_mm": float(first_order.efl) * mm, "fno_working": float(first_order.fno)},

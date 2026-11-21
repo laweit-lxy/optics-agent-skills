@@ -76,5 +76,7 @@ def test_diagnose_cooke_over_mcp(tmp_path):
     report = payload(result)
     causes = {c["category"]: c["confirmed_by"] for c in report["causes"]}
     assert causes["material_catalog"] == "material_catalog_swap"
+    assert causes["pupil_coordinates"] == "pupil_coordinates"
+    assert report["status"] == "EXPLAINED" and report["unresolved"] == []
     assert report["reference"]["rayoptics"]["agrees"] is True
     assert os.path.isfile(report["report_path"])

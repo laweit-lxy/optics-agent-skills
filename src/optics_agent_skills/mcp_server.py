@@ -86,10 +86,10 @@ def cross_check_prescription(zmx_path: str, reference_json_path: str | None = No
 def diagnose_discrepancies(zmx_path: str, reference_json_path: str | None = None) -> dict[str, Any]:
     """Explain why Optiland and RayOptics disagree on an absolute-path .zmx.
 
-    Compares the prescription each engine built (geometry, stop, wavelengths, glass
-    catalog and index per surface), first-order quantities and real rays, then runs
-    elimination experiments (glass-catalog swap, real ray aiming). Status is AGREE,
-    EXPLAINED or UNRESOLVED, with confirmed causes and open items.
+    Compares both imported prescriptions surface by surface, first-order quantities
+    and real rays. Tests glass catalogs, object distance, aiming, field vignetting
+    and pupil coordinates. Returns AGREE, EXPLAINED or UNRESOLVED, with confirmed
+    causes, open items and the path to the full report.
     """
     output_dir = _run_dir("diagnose")
     report = _call(engines.diagnose, zmx_path, output_dir, reference_json_path)
