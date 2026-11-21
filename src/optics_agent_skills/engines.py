@@ -109,12 +109,13 @@ def wave_self_test(output: Path) -> dict[str, Any]:
 
 def probe(engine: str, zmx: Path, output: Path, overrides: dict | None = None,
           ray_aiming: str | None = None, object_distance: float | None = None,
-          force: bool = False) -> dict[str, Any]:
+          force: bool = False, *, ray_sampling: dict | None = None) -> dict[str, Any]:
     scripts = SKILLS / "diagnose-optical-discrepancies" / "scripts"
     if engine == "design":
         args = ["--material-overrides", json.dumps(overrides or {})]
         args += ["--ray-aiming", ray_aiming] if ray_aiming else []
         args += ["--object-distance", repr(object_distance)] if object_distance is not None else []
+        args += ["--ray-sampling", json.dumps(ray_sampling, separators=(",", ":"))] if ray_sampling else []
         args += ["--force"] if force else []
         result = run_script("design", scripts / "probe_optiland.py", "--input-zmx", zmx,
                             "--output", output, *args)
@@ -198,23 +199,25 @@ def diagnose(zmx: str | os.PathLike, output_dir: Path, reference_json: str | Non
     # difference it targets is present. A setting that removes a difference is kept
     # for the next experiment; one that removes nothing is reverted.
     experiments: list[dict[str, Any]] = []
-    kept: dict[str, Any] = {"overrides": {}, "ray_aiming": None, "object_distance": None}
-    state = baseline
+    kept: dict[str, Any] = {"overrides": {}, "ray_aiming": None, "object_distance": None, "ray_sampling": {}}
+    state, current = baseline, optiland
 
     def run(name: str, hypothesis: str, **change: Any) -> None:
-        nonlocal state
+        nonlocal state, current
         trial = {**kept, **change}
         result = probe("design", source, output_dir / f"probe-optiland-{name.replace('_', '-')}.json",
-                       trial["overrides"], trial["ray_aiming"], trial["object_distance"], force=force)
+                       trial["overrides"], trial["ray_aiming"], trial["object_distance"], force=force,
+                       ray_sampling=trial["ray_sampling"])
         comparison = diagnosis.compare(result, rayoptics)
         outcome = diagnosis.step(state, comparison)
         if outcome["removed"]:
             kept.update(change)
-            state = outcome["state"]
+            state, current = outcome["state"], result
         experiments.append({"name": name, "status": "RAN", "hypothesis": hypothesis,
                             "settings": {"material_overrides": trial["overrides"],
                                          "ray_aiming": trial["ray_aiming"] or "paraxial",
-                                         "object_distance_mm": trial["object_distance"]},
+                                         "object_distance_mm": trial["object_distance"],
+                                         "ray_sampling": trial["ray_sampling"]},
                             "kept": bool(outcome["removed"]), "removed": len(outcome["removed"]),
                             "untraced_rays": outcome["untraced"],
                             "result": comparison, "efl_mm_after": result["first_order"]["efl_mm"]})
@@ -224,6 +227,66 @@ def diagnose(zmx: str | os.PathLike, output_dir: Path, reference_json: str | Non
 
     def open_differences() -> bool:
         return bool(state["first_order"] or state["rays"])
+
+    def run_sampling_experiments() -> None:
+        def key(ray: dict) -> tuple:
+            return ray["field_index"], tuple(ray["pupil"])
+
+        def xy(ray: dict, name: str) -> list[float] | None:
+            value = ray.get(name)
+            if (isinstance(value, list) and len(value) == 2
+                    and all(isinstance(v, (int, float)) and math.isfinite(v) for v in value)):
+                return value
+            return None
+
+        def target(ray: dict, point: list[float]) -> dict:
+            return {"field_index": ray["field_index"], "pupil": ray["pupil"], "xy": point}
+
+        if not state["rays"]:
+            skip("vignetting", "no real-ray difference left to explain")
+            skip("pupil_coordinates", "no real-ray difference left to explain")
+            return
+        reference_rays = {key(r): r for r in rayoptics["rays"]}
+        pupils = []
+        for ray in current["rays"]:
+            ref = reference_rays.get(key(ray))
+            if ref and xy(ray, "effective_pupil") is not None:
+                point = xy(ref, "effective_pupil")
+                if point is not None:
+                    pupils.append(target(ray, point))
+        if pupils:
+            # Also run on identical maps: this is the no-effect control for
+            # prescriptions with no field vignetting factors.
+            run("vignetting", "the image intercepts agree when both engines use RayOptics' field-vignetted "
+                "normalized pupils", ray_sampling={"pupils": pupils})
+        else:
+            skip("vignetting", "no comparable field-vignetted pupil coordinates")
+
+        remaining = {key(f) for f in state["rays"] if f["ray"] == "marginal" and not f["untraced"]}
+        if not remaining:
+            skip("pupil_coordinates", "no traced pupil-edge difference left to explain")
+        elif kept["ray_aiming"] != "iterative":
+            skip("pupil_coordinates", "iterative aiming was not retained; switching aimers would confound the trial")
+        elif any(f["category"] == "importer" and f.get("surface", 0) <= current["stop_index"]
+                 for f in state["inputs"]):
+            skip("pupil_coordinates", "the engines do not share the same imported geometry through the stop")
+        else:
+            targets = []
+            for ray in current["rays"]:
+                if key(ray) not in remaining:
+                    continue
+                ref = reference_rays.get(key(ray), {})
+                a, b = xy(ray, "effective_pupil"), xy(ref, "effective_pupil")
+                stop = xy(ref, "stop_xy_mm")
+                if (a is not None and b is not None and math.dist(a, b) <= 1e-12
+                        and stop is not None and xy(ray, "stop_xy_mm") is not None):
+                    targets.append(target(ray, stop))
+            if targets:
+                run("pupil_coordinates", "matched real-stop intercepts remove differences with the pupil "
+                    "vignetting map and iterative aimer held fixed",
+                    ray_sampling={**kept["ray_sampling"], "stop_targets_mm": targets})
+            else:
+                skip("pupil_coordinates", "no differing ray with matching vignetting and centered real-stop targets")
 
     def run_experiments() -> None:
         overrides = diagnosis.catalog_overrides(optiland, rayoptics, baseline["inputs"])
@@ -250,6 +313,7 @@ def diagnose(zmx: str | os.PathLike, output_dir: Path, reference_json: str | Non
         else:
             run("ray_aiming", "off-axis rays agree when Optiland aims rays at the real stop",
                 ray_aiming="iterative")
+        run_sampling_experiments()
 
     not_comparable = diagnosis.blocking(baseline["inputs"])
     if not_comparable:
@@ -268,6 +332,7 @@ def diagnose(zmx: str | os.PathLike, output_dir: Path, reference_json: str | Non
                     for p in (optiland, rayoptics)},
         "tolerances": {"geometry_atol_mm": diagnosis.GEOMETRY_ATOL_MM, "index_atol": diagnosis.INDEX_ATOL,
                        "first_order_rtol": diagnosis.FIRST_ORDER_RTOL, "ray_atol_mm": diagnosis.RAY_ATOL_MM},
+        "surface_comparison": diagnosis.surface_comparison(optiland, rayoptics),
         "baseline": baseline,
         "experiments": experiments,
         "causes": conclusion["causes"],

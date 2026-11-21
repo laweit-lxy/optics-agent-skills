@@ -27,7 +27,7 @@ python3.12 -m venv .venv-design-optical-systems
 - Hubble and Double-Gauss ZMX round trips keep paraxial `rtol=1e-12` and ray-intercept `atol=1e-9` gates. Cooke catalog identity, actual n(λ), EFL, and binary64 formatting gates pass.
 - Immutable Hubble OpticStudio 2023 R1.02 references for first-order quantities, six real rays, and spot radii pass unchanged.
 - Hubble RMS wavefront sampling leaves a residual near 0.00076 waves; strict tangential field curvature remains an upstream xfail boundary (0.6%). Both are accepted as non-blocking; neither threshold is relaxed. Re-evaluate at the next Optiland upgrade; an unexpected pass is a behavior change to investigate.
-- Known reference, not a gate: on `tests/data/cooke/cooke-6cd4da4.zmx`, Optiland EFL is 49.999783 mm against OpticStudio 50.000394 mm, a relative difference of -1.22e-5, slightly above `RTOL=1e-5`. The cause is not investigated (glass data suspected).
+- Known reference, not a gate: on `tests/data/cooke/cooke-6cd4da4.zmx`, Optiland EFL is 49.999783 mm against OpticStudio 50.000394 mm, a relative difference of -1.22e-5, slightly above `RTOL=1e-5`. Optiland 0.6.3 selects Schott F2; RayOptics and OpticStudio select Hikari F2. The catalog-swap regression in `tests/test_diagnose_optical_discrepancies.py` replaces only F2 and reproduces the reference EFL.
 
 The v0.6.3 release precedes later upstream GCAT/F-number fixes; do not attribute those fixes to this release.
 
