@@ -4,7 +4,7 @@
 
 - Upstream: https://github.com/mjhoptics/ray-optics (BSD-3-Clause), commit `5009d933ae525defcd799344ad94f80cc6177892`, package `0.9.10.post1.dev10+g5009d933a`. It includes the upstream fixes for inch units (`UNIT IN`/`INCH`) and for the infinite-object stand-in distance (see Policy behavior). The previous pin was `e25bc579116d31ed97fa1632f871e2801e8e956e`.
 - Installed through pip from that commit (`requirements.txt`). The entry reads the commit pip records in `direct_url.json` and also recomputes a package manifest of the upstream Git tree (192 files, SHA-256 `73a22ea794d88134582424b78f1112c7989ab973e90ec8c34affb415204d1111`). Either matching the pin qualifies the source; a manifest difference alone usually means line-ending conversion at checkout and is recorded in the report. A fresh pip install from GitHub on Windows (2026-11-16 UTC) recorded the pinned commit; with Git's `core.autocrlf=true`, 148 of its 192 files were checked out with CRLF line endings and no other byte differed, so its manifest is `230a1fe3ae43ab6f4b540d4fd559e901b209240d538c2c793c67774eb28bea85` and the commit qualifies it.
-- Python 3.12; opticalglass 2.0.2, NumPy 2.5.1, SciPy 1.18.0; the full set is in `requirements.txt`.
+- Python 3.12; opticalglass 2.0.2, NumPy 2.5.5, SciPy 1.18.0; the full set is in `requirements.txt`.
 - The catalog/F-number policy `scripts/rayoptics_local_policy.py` is versioned with the entry; the report records its SHA-256.
 
 Install into a dedicated virtual environment (Git is required for the pinned source):

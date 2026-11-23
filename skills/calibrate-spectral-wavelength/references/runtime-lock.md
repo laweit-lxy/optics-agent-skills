@@ -3,7 +3,7 @@
 ## Pinned runtime
 
 - Repository: https://github.com/jveitchmichaelis/rascal (BSD-3-Clause).
-- Release `0.3.11` from PyPI. Python 3.12, 64-bit. NumPy 2.5.4, SciPy 1.18.1; the full set of 21 distributions is in `requirements.txt`.
+- Release `0.3.11` from PyPI. Python 3.12, 64-bit. NumPy 2.5.5, SciPy 1.18.1; the full set of 21 distributions is in `requirements.txt`.
 - The lock pins versions, not wheel hashes. Library source is used unmodified.
 - CPU only. Matplotlib is forced to the Agg backend with a cache inside the new output directory; nothing is plotted and no browser is started (Kaleido is installed as a RASCAL dependency and never called).
 

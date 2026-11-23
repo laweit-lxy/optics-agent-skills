@@ -4,7 +4,7 @@
 
 - Chromatix 0.6.0 from `chromatix-team/chromatix@ce1482906fc663298613bb252bbf425e3be59839` (MIT).
 - Prysm 0.22 from `brandondube/prysm@5008f47803af6ff69eed474fca049456076e4a7d` (MIT).
-- Python 3.12; JAX/JAXLIB 0.11.0, NumPy 2.5.1, SciPy 1.18.0. `requirements.txt` locks every distribution except pip.
+- Python 3.12; JAX/JAXLIB 0.11.0, NumPy 2.5.5, SciPy 1.18.0. `requirements.txt` locks every distribution except pip.
 - JAX backend: CPU.
 
 Install into a dedicated environment (Git is required for the pinned sources); never upgrade an existing environment in place:
