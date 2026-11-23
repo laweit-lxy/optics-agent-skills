@@ -9,7 +9,7 @@ jaxopt==0.8.5
 jaxtyping==0.3.11
 lineax==0.1.1
 ml_dtypes==0.5.4
-numpy==2.5.1
+numpy==2.5.5
 opt_einsum==3.4.0
 optax==0.2.8
 optimistix==0.1.0

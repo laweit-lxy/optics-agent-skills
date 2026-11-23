@@ -3,7 +3,7 @@
 ## Pinned runtime
 
 - Repository: https://github.com/CadQuery/cadquery (Apache-2.0).
-- Release `2.8.0` from PyPI with cadquery-ocp 7.9.3.1.1 (OCCT bindings). Python 3.12, 64-bit. VTK 9.6.2, NumPy 2.5.4, SciPy 1.18.1; the full set of 44 distributions is in `requirements.txt`.
+- Release `2.8.0` from PyPI with cadquery-ocp 7.9.3.1.1 (OCCT bindings). Python 3.12, 64-bit. VTK 9.6.2, NumPy 2.5.5, SciPy 1.18.1; the full set of 44 distributions is in `requirements.txt`.
 - The lock pins versions, not wheel hashes. Library source is used unmodified.
 - CPU only, no GUI: CQ-editor, viewers and the trame server are never started. Matplotlib configuration is process-local inside the new output directory.
 
