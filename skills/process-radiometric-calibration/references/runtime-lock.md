@@ -1,6 +1,6 @@
 # Radiometric calibration runtime lock
 
-- Python 3.12, 64-bit, CPU only. `requirements.txt` pins NumPy 2.5.4, the sole third-party runtime dependency ([NumPy license](https://numpy.org/doc/stable/license.html), BSD-3-Clause core and bundled components as documented there). No wheel hashes are pinned.
+- Python 3.12, 64-bit, CPU only. `requirements.txt` pins NumPy 2.5.5, the sole third-party runtime dependency ([NumPy license](https://numpy.org/doc/stable/license.html), BSD-3-Clause core and bundled components as documented there). No wheel hashes are pinned.
 - The numerical model uses explicit conversions for the supported units and analytic GUM derivatives. It does not depend on a global Pint registry or on uncertainty-package defaults.
 - Use an isolated virtual environment (a separate copy of the Python packages just for this skill). From the repository root:
 
